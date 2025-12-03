@@ -1,0 +1,381 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BuildERP - Professional Construction Management{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Modular CSS -->
+    <link href="{% static 'css/variables.css' %}" rel="stylesheet">
+    <link href="{% static 'css/base.css' %}" rel="stylesheet">
+    <link href="{% static 'css/layout.css' %}" rel="stylesheet">
+    <link href="{% static 'css/components.css' %}" rel="stylesheet">
+    <link href="{% static 'css/responsive.css' %}" rel="stylesheet">
+    <link href="{% static 'css/animations.css' %}" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar Toggle for Mobile -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-logo">
+                <div class="logo-icon">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="brand-text">
+                    <h4 class="brand-name">EZYHISHAB</h4>
+                    <small class="brand-subtitle">ERP System</small>
+                </div>
+            </div>
+            {% if user.is_authenticated %}
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <ul class="nav flex-column">
+            <!-- Dashboard -->
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </li>
+
+            <!-- Customers -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'customers' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#customersSubmenu" aria-expanded="false">
+                    <i class="bi bi-people"></i> Customers
+                </a>
+                <div class="collapse" id="customersSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'customers' and request.resolver_match.url_name == 'customer_list' %}active{% endif %}" href="{% url 'customers:customer_list' %}">
+                                <i class="bi bi-list-ul"></i> All Customers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'customers' and request.resolver_match.url_name == 'customer_create' %}active{% endif %}" href="{% url 'customers:customer_create' %}">
+                                <i class="bi bi-person-plus"></i> Add Customer
+                            </a>
+                        </li>
+<!--                        <li class="nav-item">-->
+<!--                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'customers' and request.resolver_match.url_name == 'ledger_list' %}active{% endif %}" href="{% url 'customers:ledger_list' %}">-->
+<!--                                <i class="bi bi-journal-text"></i> Customer Ledgers-->
+<!--                            </a>-->
+<!--                        </li>-->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'customers' and request.resolver_match.url_name == 'commitment_list' %}active{% endif %}" href="{% url 'customers:commitment_list' %}">
+                                <i class="bi bi-calendar-check"></i> Commitments
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- Suppliers -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'suppliers' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#suppliersSubmenu" aria-expanded="false">
+                    <i class="bi bi-truck"></i> Suppliers
+                </a>
+                <div class="collapse" id="suppliersSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'suppliers' and request.resolver_match.url_name == 'supplier_list' %}active{% endif %}" href="{% url 'suppliers:supplier_list' %}">
+                                <i class="bi bi-list-ul"></i> All Suppliers
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'suppliers' and request.resolver_match.url_name == 'supplier_create' %}active{% endif %}" href="{% url 'suppliers:supplier_create' %}">
+                                <i class="bi bi-person-plus"></i> Add Supplier
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'suppliers' and request.resolver_match.url_name == 'ledger_list' %}active{% endif %}" href="{% url 'suppliers:ledger_list' %}">
+                                <i class="bi bi-journal-text"></i> Supplier Ledgers
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- Inventory -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'stock' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#inventorySubmenu" aria-expanded="false">
+                    <i class="bi bi-box-seam"></i> Inventory
+                </a>
+                <div class="collapse" id="inventorySubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <!-- Products Section -->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'stock' and request.resolver_match.url_name == 'product_list' %}active{% endif %}" href="{% url 'stock:product_list' %}">
+                                <i class="bi bi-box"></i> Products
+                            </a>
+                        </li>
+                        
+                        <!-- Categories Section -->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'stock' and request.resolver_match.url_name == 'category_list' %}active{% endif %}" href="{% url 'stock:category_list' %}">
+                                <i class="bi bi-tags"></i> Categories
+                            </a>
+                        </li>
+                        
+                        <!-- Brands Section -->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'stock' and request.resolver_match.url_name == 'brand_list' %}active{% endif %}" href="{% url 'stock:brand_list' %}">
+                                <i class="bi bi-award"></i> Brands
+                            </a>
+                        </li>
+                        
+                        <!-- Unit Types Section -->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'stock' and request.resolver_match.url_name == 'unittype_list' %}active{% endif %}" href="{% url 'stock:unittype_list' %}">
+                                <i class="bi bi-rulers"></i> Unit Types
+                            </a>
+                        </li>
+                        
+                        <!-- Stock Management Section -->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'stock' and request.resolver_match.url_name == 'stock_list' %}active{% endif %}" href="{% url 'stock:stock_list' %}">
+                                <i class="bi bi-boxes"></i> Stock Levels
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- Sales -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'sales' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#salesSubmenu" aria-expanded="false">
+                    <i class="bi bi-cart-check"></i> Sales
+                </a>
+                <div class="collapse" id="salesSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'order_list' %}active{% endif %}" href="{% url 'sales:order_list' %}">
+                                <i class="bi bi-list-ul"></i> Sales Orders
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'order_create' %}active{% endif %}" href="{% url 'sales:order_create' %}">
+                                <i class="bi bi-plus-circle"></i> New Order
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'instant_sales' %}active{% endif %}" href="{% url 'sales:instant_sales' %}">
+                                <i class="bi bi-cash-coin"></i> Instant Sale
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- Purchases -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'purchases' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#purchasesSubmenu" aria-expanded="false">
+                    <i class="bi bi-cart-plus"></i> Purchases
+                </a>
+                <div class="collapse" id="purchasesSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'order_list' %}active{% endif %}" href="{% url 'purchases:order_list' %}">
+                                <i class="bi bi-list-ul"></i> Purchase Orders
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'order_create' %}active{% endif %}" href="{% url 'purchases:order_create' %}">
+                                <i class="bi bi-plus-circle"></i> New Order
+                            </a>
+                        </li>
+                        <!-- Goods Receipts removed - simplified to use only Purchase Orders -->
+                        <!-- Purchase Invoices removed - simplified to Purchase Orders only -->
+                        <!-- Purchase Payments removed - simplified flow -->
+                        <!-- Purchase Returns removed - simplified flow -->
+                    </ul>
+                </div>
+            </li>
+
+            <!-- Expenses -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'expenses' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#expensesSubmenu" aria-expanded="false">
+                    <i class="bi bi-cash-stack"></i> Expenses
+                </a>
+                <div class="collapse" id="expensesSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}" href="{% url 'expenses:expense_list' %}">
+                                <i class="bi bi-list-ul"></i> All Expenses
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}" href="{% url 'expenses:category_list' %}">
+                                <i class="bi bi-tag"></i> Expense Category
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
+            <!-- Reports -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'reports' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#reportsSubmenu" aria-expanded="false">
+                    <i class="bi bi-graph-up"></i> Reports
+                </a>
+                <div class="collapse" id="reportsSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'sales_report_enhanced' %}active{% endif %}" href="{% url 'reports:sales_report_enhanced' %}">
+                                <i class="bi bi-cart-check"></i> Sales Report
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'top_selling_products' %}active{% endif %}" href="{% url 'reports:top_selling_products' %}">
+                                <i class="bi bi-trophy"></i> Top Products
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'top_selling_customers' %}active{% endif %}" href="{% url 'reports:top_selling_customers' %}">
+                                <i class="bi bi-star"></i> Top Customers
+                            </a>
+                        </li>
+<!--                        <li class="nav-item">-->
+<!--                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'accounts_receivable' %}active{% endif %}" href="{% url 'reports:accounts_receivable' %}">-->
+<!--                                <i class="bi bi-arrow-down-circle"></i> Accounts Receivable-->
+<!--                            </a>-->
+<!--                        </li>-->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'profit_loss' %}active{% endif %}" href="{% url 'reports:profit_loss' %}">
+                                <i class="bi bi-graph-up"></i> Profit & Loss
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'logout' %}">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="page-title">{% block page_title %}Welcome{% endblock %}</h1>
+                {% block page_description %}{% endblock %}
+                {% block page_actions %}{% endblock %}
+            </div>
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js for reports -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- AOS Animation -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 800,
+            once: true,
+            mirror: false,
+        });
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.querySelector('.sidebar-toggle');
+            
+            if (window.innerWidth <= 768) {
+                if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                    sidebar.classList.remove('show');
+                }
+            }
+        });
+
+        // Auto-expand current section
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find the active submenu link
+            const activeSubmenuLink = document.querySelector('.submenu-link.active');
+            if (activeSubmenuLink) {
+                // Find the parent collapse element
+                const collapseElement = activeSubmenuLink.closest('.collapse');
+                if (collapseElement) {
+                    // Show the collapse element
+                    collapseElement.classList.add('show');
+                    
+                    // Update the dropdown toggle aria-expanded
+                    const dropdownToggle = document.querySelector(`[data-bs-target="#${collapseElement.id}"]`);
+                    if (dropdownToggle) {
+                        dropdownToggle.setAttribute('aria-expanded', 'true');
+                    }
+                }
+            }
+        });
+
+        // Handle dropdown toggles
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('dropdown-toggle')) {
+                event.preventDefault();
+                const targetId = event.target.getAttribute('data-bs-target');
+                const collapseElement = document.querySelector(targetId);
+                
+                if (collapseElement) {
+                    const isExpanded = event.target.getAttribute('aria-expanded') === 'true';
+                    event.target.setAttribute('aria-expanded', !isExpanded);
+                    
+                    if (isExpanded) {
+                        collapseElement.classList.remove('show');
+                    } else {
+                        collapseElement.classList.add('show');
+                    }
+                }
+            }
+        });
+
+        // Dashboard utilities
+        function refreshDashboard() {
+            location.reload();
+        }
+
+        function exportDashboard() {
+            // Implement export functionality
+            console.log('Export dashboard');
+        }
+    </script>
+</body>
+</html>

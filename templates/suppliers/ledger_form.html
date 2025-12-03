@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+    {% if object %}Edit Ledger Entry{% else %}Add Ledger Entry{% endif %}
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'suppliers:supplier_ledger_detail' supplier_id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Ledger
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    {% if object %}Edit Ledger Entry{% else %}Add Manual Ledger Entry{% endif %}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.transaction_type.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-tag me-1"></i>Transaction Type *
+                                </label>
+                                <select name="{{ form.transaction_type.name }}" id="{{ form.transaction_type.id_for_label }}" class="form-select form-select-lg">
+                                    {% for value, label in form.transaction_type.field.choices %}
+                                        <option value="{{ value }}" {% if form.transaction_type.value == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.transaction_type.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.transaction_type.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Select the type of transaction to record</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.amount.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-currency-dollar me-1"></i>Amount *
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text">৳</span>
+                                    <input type="number" name="{{ form.amount.name }}" id="{{ form.amount.id_for_label }}" 
+                                           value="{{ form.amount.value|default:'' }}" 
+                                           class="form-control" step="0.01" min="0" required>
+                                </div>
+                                {% if form.amount.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Enter the transaction amount</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Method Selection (shown only when Payment is selected) -->
+                    <div class="row" id="payment-method-section" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.payment_method.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-wallet2 me-1"></i>Payment Method *
+                                </label>
+                                <select name="{{ form.payment_method.name }}" id="{{ form.payment_method.id_for_label }}" 
+                                        class="form-select form-select-lg">
+                                    <option value="">Select Payment Method</option>
+                                    {% for value, label in form.payment_method.field.choices %}
+                                        <option value="{{ value }}" {% if form.payment_method.value == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if form.payment_method.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.payment_method.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Select how the payment was made</div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.transaction_date.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-calendar3 me-1"></i>Transaction Date *
+                                </label>
+                                <input type="date" name="{{ form.transaction_date.name }}" id="{{ form.transaction_date.id_for_label }}" 
+                                       value="{{ form.transaction_date.value|default:'' }}" 
+                                       class="form-control form-control-lg" required>
+                                {% if form.transaction_date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.transaction_date.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Date when the transaction occurred</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.reference.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-hash me-1"></i>Reference
+                                </label>
+                                <input type="text" name="{{ form.reference.name }}" id="{{ form.reference.id_for_label }}" 
+                                       value="{{ form.reference.value|default:'' }}" 
+                                       class="form-control form-control-lg" maxlength="100">
+                                {% if form.reference.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.reference.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Optional reference number or code</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">
+                            <i class="bi bi-chat-text me-1"></i>Description *
+                        </label>
+                        <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" 
+                                  class="form-control" rows="3" required>{{ form.description.value|default:'' }}</textarea>
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">Provide a detailed description of the transaction</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a href="{% url 'suppliers:supplier_ledger_detail' supplier_id %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {% if object %}Update{% else %}Create{% endif %} Ledger Entry
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Transaction Types Guide
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-primary me-2">Purchase</span>
+                            <small class="text-muted">Increases balance (debit)</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-success me-2">Payment</span>
+                            <small class="text-muted">Decreases balance (credit)</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-warning me-2">Return</span>
+                            <small class="text-muted">Decreases balance (credit)</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-secondary me-2">Adjustment</span>
+                            <small class="text-muted">Balance adjustment</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-dark me-2">Commission</span>
+                            <small class="text-muted">Commission transactions</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    Quick Tips
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small>Use positive amounts for purchases</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small>Use negative amounts for payments</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small>Be specific in descriptions</small>
+                    </li>
+                    <li class="mb-0">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small>Include reference numbers when available</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-select-lg, .form-control-lg {
+    border-radius: 0.5rem;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-select-lg:focus, .form-control-lg:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.input-group-lg .form-control {
+    border-left: none;
+}
+
+.input-group-lg .input-group-text {
+    border-right: none;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.card {
+    border: none;
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+    border: none;
+}
+
+.btn-lg {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.list-group-item {
+    padding: 0.75rem 0;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const transactionTypeField = document.querySelector('select[name="transaction_type"]');
+    const paymentMethodSection = document.getElementById('payment-method-section');
+    const paymentMethodField = document.querySelector('select[name="payment_method"]');
+    const bankAccountSection = document.getElementById('bank-account-section');
+    
+    // Set default date to today
+    const dateField = document.querySelector('input[type="date"]');
+    if (dateField && !dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+    }
+    
+    // Show/hide payment method section based on transaction type
+    function togglePaymentMethod() {
+        if (transactionTypeField.value === 'payment') {
+            paymentMethodSection.style.display = 'block';
+            paymentMethodField.required = true;
+        } else {
+            paymentMethodSection.style.display = 'none';
+            paymentMethodField.required = false;
+            paymentMethodField.value = '';
+            bankAccountSection.style.display = 'none';
+            bankAccountField.required = false;
+            bankAccountField.value = '';
+        }
+    }
+    
+    // Show/hide bank account selection based on payment method
+    function toggleBankAccount() {
+        if (paymentMethodField.value === 'bank_transfer') {
+            bankAccountSection.style.display = 'block';
+            bankAccountField.required = true;
+        } else {
+            bankAccountSection.style.display = 'none';
+            bankAccountField.required = false;
+            bankAccountField.value = '';
+        }
+    }
+    
+    // Initial checks
+    togglePaymentMethod();
+    toggleBankAccount();
+    
+    // Listen for changes
+    transactionTypeField.addEventListener('change', togglePaymentMethod);
+    paymentMethodField.addEventListener('change', toggleBankAccount);
+    
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    }
+    
+    // Amount field formatting
+    const amountField = document.querySelector('input[name="amount"]');
+    if (amountField) {
+        amountField.addEventListener('input', function() {
+            // Remove any non-numeric characters except decimal point
+            this.value = this.value.replace(/[^0-9.-]/g, '');
+        });
+    }
+    
+    // Transaction type change handler for amount help text
+    if (transactionTypeField && amountField) {
+        transactionTypeField.addEventListener('change', function() {
+            const type = this.value;
+            const amountHelp = amountField.parentNode.querySelector('.form-text');
+            
+            if (type === 'payment' || type === 'return') {
+                if (amountHelp) {
+                    amountHelp.textContent = 'Enter positive amount (will be recorded as credit)';
+                    amountHelp.className = 'form-text text-warning';
+                }
+            } else if (type === 'purchase') {
+                if (amountHelp) {
+                    amountHelp.textContent = 'Enter positive amount (will be recorded as debit)';
+                    amountHelp.className = 'form-text text-info';
+                }
+            } else {
+                if (amountHelp) {
+                    amountHelp.textContent = 'Enter the transaction amount';
+                    amountHelp.className = 'form-text';
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

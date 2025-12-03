@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ supplier.name }} - Ledger - Building Materials ERP{% endblock %}
+
+{% block page_title %}{{ supplier.name }} - Ledger{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'suppliers:supplier_detail' supplier.pk %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Supplier
+    </a>
+    <a href="{% url 'suppliers:supplier_ledger_create' supplier.pk %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Manual Entry
+    </a>
+    <a href="{% url 'suppliers:supplier_opening_balance' supplier.pk %}" class="btn btn-warning">
+        <i class="bi bi-wallet2"></i> Set Opening Balance
+    </a>
+    <a href="{% url 'purchases:order_create' %}" class="btn btn-success">
+        <i class="bi bi-cart-plus"></i> New Purchase Order
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Summary Cards -->
+    <div class="col-md-3">
+        <div class="card-module primary">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Opening Balance</h6>
+                    <h3 class="card-module-value">৳{{ opening_balance|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card-module info">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Total Purchases</h6>
+                    <h3 class="card-module-value">৳{{ total_debit|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-cart-plus"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card-module success">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Total Payments</h6>
+                    <h3 class="card-module-value">৳{{ total_credit|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-credit-card"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card-module {% if current_balance >= 0 %}warning{% else %}danger{% endif %}">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Current Balance</h6>
+                    <h3 class="card-module-value">৳{{ current_balance|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-{% if current_balance >= 0 %}arrow-up{% else %}arrow-down{% endif %}"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-journal-text"></i>
+                    Transaction History
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Reference</th>
+                                <th>Description</th>
+                                <th>Payment Method</th>
+                                <th class="text-end">Debit</th>
+                                <th class="text-end">Credit</th>
+                                <th class="text-end">Balance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if transaction.type == 'Opening Balance' %}bg-dark
+                                        {% elif transaction.type == 'Purchase Order' %}bg-primary
+                                        {% elif transaction.type == 'Purchase Invoice' %}bg-info
+                                        {% elif transaction.type == 'Payment' %}bg-success
+                                        {% elif transaction.type == 'Return' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ transaction.type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <code>{{ transaction.reference }}</code>
+                                </td>
+                                <td>{{ transaction.description }}</td>
+                                <td>
+                                    {% if transaction.payment_method %}
+                                        <span class="badge 
+                                            {% if transaction.payment_method == 'cash' %}bg-success
+                                            {% elif transaction.payment_method == 'bank_transfer' %}bg-primary
+                                            {% elif transaction.payment_method == 'cheque' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {% if transaction.payment_method == 'cash' %}
+                                                <i class="bi bi-cash me-1"></i>Cash
+                                            {% elif transaction.payment_method == 'bank_transfer' %}
+                                                <i class="bi bi-bank me-1"></i>Bank
+                                            {% elif transaction.payment_method == 'cheque' %}
+                                                <i class="bi bi-credit-card me-1"></i>Cheque
+                                            {% else %}
+                                                {{ transaction.payment_method|title }}
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if transaction.debit > 0 %}
+                                        <span class="text-danger">৳{{ transaction.debit|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if transaction.credit > 0 %}
+                                        <span class="text-success">৳{{ transaction.credit|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <strong class="{% if transaction.balance >= 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ৳{{ transaction.balance|floatformat:2 }}
+                                    </strong>
+                                </td>
+                                <td>
+                                    {% if transaction.status == 'draft' %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                    {% elif transaction.status == 'sent' %}
+                                        <span class="badge bg-warning">Sent</span>
+                                    {% elif transaction.status == 'received' %}
+                                        <span class="badge bg-success">Received</span>
+                                    {% elif transaction.status == 'invoiced' %}
+                                        <span class="badge bg-info">Invoiced</span>
+                                    {% elif transaction.status == 'paid' %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% elif transaction.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% elif transaction.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% elif transaction.status == 'manual' %}
+                                        <span class="badge bg-secondary">Manual</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">{{ transaction.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th colspan="4" class="text-end">Totals:</th>
+                                <th class="text-end text-danger">৳{{ total_debit|floatformat:2 }}</th>
+                                <th class="text-end text-success">৳{{ total_credit|floatformat:2 }}</th>
+                                <th class="text-end">
+                                    <strong class="{% if current_balance >= 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ৳{{ current_balance|floatformat:2 }}
+                                    </strong>
+                                </th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-journal-x text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">No Transactions Found</h4>
+                    <p class="text-muted">This supplier has no transaction history yet.</p>
+                    <div class="mt-4">
+                        <a href="{% url 'purchases:order_create' %}" class="btn btn-primary me-2">
+                            <i class="bi bi-cart-plus"></i> Create Purchase Order
+                        </a>
+                        <a href="{% url 'suppliers:supplier_ledger_create' supplier.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle"></i> Add Manual Entry
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Summary -->
+{% if transactions %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-pie-chart"></i>
+                    Transaction Summary
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h5 class="text-danger">{{ transactions|length }}</h5>
+                        <small class="text-muted">Total Transactions</small>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-info">
+                            {% for transaction in transactions %}
+                                {% if transaction.type == 'Purchase Order' %}{{ forloop.counter0|add:1 }}{% endif %}
+                            {% endfor %}
+                        </h5>
+                        <small class="text-muted">Purchase Orders</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    Account Status
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Account Status:</span>
+                    <span class="badge {% if current_balance >= 0 %}bg-danger{% else %}bg-success{% endif %} fs-6">
+                        {% if current_balance >= 0 %}Outstanding{% else %}Credit Balance{% endif %}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span>Balance:</span>
+                    <strong class="{% if current_balance >= 0 %}text-danger{% else %}text-success{% endif %}">
+                        ৳{{ current_balance|floatformat:2 }}
+                    </strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Debug Information (remove in production) -->
+{% if debug_info %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="bi bi-bug me-1"></i>
+                    Debug Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Supplier Opening Balance:</strong><br>
+                        <span class="text-primary">৳{{ debug_info.supplier_opening_balance|floatformat:2 }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Total Transactions:</strong><br>
+                        <span class="text-info">{{ debug_info.total_transactions }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Purchase Orders:</strong><br>
+                        <span class="text-success">{{ debug_info.purchase_orders_count }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Opening Balance Entries:</strong><br>
+                        <span class="text-warning">{{ debug_info.opening_balance_entries }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

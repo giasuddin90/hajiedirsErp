@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Ledger Entry Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'suppliers:ledger_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to List
+    </a>
+    <a href="#" class="btn btn-outline-primary">
+        <i class="bi bi-pencil"></i> Edit
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    Ledger Entry Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Name:</strong></td>
+                        <td>{{ object.supplier.name }} - {{ object.description }}</td>
+                    </tr>
+                    {% if object.description %}
+                    <tr>
+                        <td><strong>Description:</strong></td>
+                        <td>{{ object.description }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,554 @@
+{% extends 'base.html' %}
+
+{% block title %}Instant Sale - Building Materials ERP{% endblock %}
+
+{% block page_title %}Instant Sale{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'sales:order_list' %}" class="btn btn-secondary">
+    <i class="bi bi-arrow-left"></i> Back to Orders
+</a>
+{% endblock %}
+
+{% block content %}
+<style>
+.product-row {
+    transition: all 0.3s ease;
+}
+.product-row:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.quantity-input, .price-input, .total-input {
+    text-align: right;
+}
+.total-input {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+.product-info {
+    background-color: #e9ecef;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-cash-coin"></i>
+                    Instant Sale
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="instant-sales-form">
+                    {% csrf_token %}
+                    
+                    <!-- Hidden fields -->
+                    {{ form.sales_type }}
+                    
+                    <!-- Sale Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.customer_name.id_for_label }}" class="form-label">
+                                    <i class="bi bi-person"></i> Customer Name <small class="text-muted">(Optional)</small>
+                                </label>
+                                {{ form.customer_name }}
+                                {% if form.customer_name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.customer_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.order_date.id_for_label }}" class="form-label">
+                                    <i class="bi bi-calendar"></i> Sale Date
+                                </label>
+                                {{ form.order_date }}
+                                {% if form.order_date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.order_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if form.notes %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label for="{{ form.notes.id_for_label }}" class="form-label">
+                                    <i class="bi bi-chat-text"></i> Notes
+                                </label>
+                                {{ form.notes }}
+                                {% if form.notes.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Products Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="bi bi-box-seam"></i>
+                                Products
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {{ formset.management_form }}
+                            
+                            <div id="products-container">
+                                {% if formset.forms %}
+                                    {% for form in formset %}
+                                    <div class="product-row row mb-3 p-3 border rounded formset-form" data-form-index="{{ forloop.counter0 }}">
+                                        {{ form.id }}
+                                        
+                                        <!-- Category Selection -->
+                                        <div class="col-md-3">
+                                            <label class="form-label">
+                                                <i class="bi bi-tags"></i> Category <small class="text-muted">(Filter)</small>
+                                            </label>
+                                            <select class="form-select category-select" name="category_{{ forloop.counter0 }}">
+                                                <option value="">All Categories</option>
+                                                {% for category in categories %}
+                                                <option value="{{ category.id }}" {% if form.product.value and form.product.value.category.id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Brand Selection -->
+                                        <div class="col-md-3">
+                                            <label class="form-label">
+                                                <i class="bi bi-award"></i> Brand <small class="text-muted">(Filter)</small>
+                                            </label>
+                                            <select class="form-select brand-select" name="brand_{{ forloop.counter0 }}">
+                                                <option value="">All Brands</option>
+                                                {% for brand in brands %}
+                                                <option value="{{ brand.id }}" {% if form.product.value and form.product.value.brand.id == brand.id %}selected{% endif %}>{{ brand.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Product Selection -->
+                                        <div class="col-md-3">
+                                            <label class="form-label">
+                                                <i class="bi bi-box-seam"></i> Product <span class="text-danger fw-bold">*</span>
+                                            </label>
+                                            {{ form.product }}
+                                            {% if form.product.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.product.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Quantity -->
+                                        <div class="col-md-2">
+                                            <label class="form-label">
+                                                <i class="bi bi-hash"></i> Quantity <span class="text-danger fw-bold">*</span>
+                                            </label>
+                                            {{ form.quantity }}
+                                            {% if form.quantity.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Unit Price -->
+                                        <div class="col-md-2">
+                                            <label class="form-label">
+                                                <i class="bi bi-currency-dollar"></i> Unit Price <span class="text-danger fw-bold">*</span>
+                                            </label>
+                                            {{ form.unit_price }}
+                                            {% if form.unit_price.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.unit_price.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Total and Actions -->
+                                        <div class="col-md-2">
+                                            <label class="form-label">Total</label>
+                                            {{ form.total_price }}
+                                            {% if form.total_price.errors %}
+                                                <div class="invalid-feedback d-block">{{ form.total_price.errors.0 }}</div>
+                                            {% endif %}
+                                            {% if not forloop.first %}
+                                            <button type="button" class="btn btn-danger btn-sm mt-1 remove-product">
+                                                <i class="bi bi-trash"></i> Remove
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- DELETE checkbox for existing items -->
+                                        {% if form.DELETE %}
+                                        <div class="col-12">
+                                            {{ form.DELETE }}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <!-- Product Info Display -->
+                                        <div class="col-12 mt-2">
+                                            <div class="product-info" style="display: none;">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-info-circle"></i> 
+                                                    <span class="product-details"></span>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <!-- Show message when no products exist -->
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i> No products added yet. Click "Add Product" below to add items to this sale.
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline-primary" id="add-product">
+                                <i class="bi bi-plus-circle"></i> Add Product
+                            </button>
+                            
+                            <!-- Total Summary -->
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title">
+                                                <i class="bi bi-calculator"></i> Sale Summary
+                                            </h6>
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <strong>Total Items:</strong>
+                                                </div>
+                                                <div class="col-6 text-end">
+                                                    <span id="total-items">0</span>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <strong>Total Amount:</strong>
+                                                </div>
+                                                <div class="col-6 text-end">
+                                                    <span id="total-amount" class="h5 text-success">৳0.00</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Buttons -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'sales:order_list' %}" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Cancel
+                                </a>
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-cash-coin"></i> Complete Instant Sale
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Product data from Django context
+    const products = {
+        {% for product in products %}
+        {{ product.id }}: {
+            id: {{ product.id }},
+            name: "{{ product.name }}",
+            unit_type: "{{ product.unit_type }}",
+            selling_price: {{ product.selling_price }},
+            current_stock: {{ product.get_total_quantity }},
+            category_id: {{ product.category.id|default:0 }},
+            brand_id: {{ product.brand.id|default:0 }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+    
+    const categories = {
+        {% for category in categories %}
+        {{ category.id }}: {
+            id: {{ category.id }},
+            name: "{{ category.name }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+    
+    const brands = {
+        {% for brand in brands %}
+        {{ brand.id }}: {
+            id: {{ brand.id }},
+            name: "{{ brand.name }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+    
+    // Initialize formset management
+    updateFormsetIndices();
+    updateSaleSummary();
+    
+    // Add product functionality
+    document.getElementById('add-product').addEventListener('click', addProductRow);
+    
+    // Remove product functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-product')) {
+            removeProductRow(e.target);
+        }
+    });
+    
+    // Product selection change
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('product-select')) {
+            handleProductChange(e.target);
+        }
+    });
+    
+    // Quantity and price change
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('quantity-input') || e.target.classList.contains('price-input')) {
+            calculateTotal(e.target);
+            updateSaleSummary();
+        }
+    });
+    
+    // Category and brand filtering
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('category-select') || e.target.classList.contains('brand-select')) {
+            filterProducts(e.target);
+        }
+    });
+    
+    function addProductRow() {
+        const container = document.getElementById('products-container');
+        let firstRow = container.querySelector('.product-row');
+        
+        if (!firstRow) {
+            firstRow = createTemplateRow();
+        }
+        
+        const newRow = firstRow.cloneNode(true);
+        const formIndex = container.querySelectorAll('.product-row').length;
+        newRow.setAttribute('data-form-index', formIndex);
+        
+        // Clear values and update form indices
+        clearRowValues(newRow);
+        updateRowFormIndices(newRow, formIndex);
+        
+        // Add remove button if not first row
+        if (formIndex > 0) {
+            addRemoveButton(newRow);
+        }
+        
+        container.appendChild(newRow);
+        updateFormsetIndices();
+        updateSaleSummary();
+    }
+    
+    function removeProductRow(button) {
+        const row = button.closest('.product-row');
+        row.remove();
+        updateFormsetIndices();
+        updateSaleSummary();
+    }
+    
+    function clearRowValues(row) {
+        const inputs = row.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.type === 'text' || input.type === 'number') {
+                input.value = '';
+            } else if (input.tagName === 'SELECT') {
+                input.selectedIndex = 0;
+            }
+        });
+    }
+    
+    function updateRowFormIndices(row, formIndex) {
+        const inputs = row.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.name) {
+                input.name = input.name.replace(/items-\d+/, `items-${formIndex}`);
+            }
+        });
+    }
+    
+    function addRemoveButton(row) {
+        const totalCol = row.querySelector('.col-md-2:last-child');
+        if (totalCol && !totalCol.querySelector('.remove-product')) {
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn btn-danger btn-sm mt-1 remove-product';
+            removeBtn.innerHTML = '<i class="bi bi-trash"></i> Remove';
+            totalCol.appendChild(removeBtn);
+        }
+    }
+    
+    function updateFormsetIndices() {
+        const totalFormsInput = document.querySelector('input[name="items-TOTAL_FORMS"]');
+        if (totalFormsInput) {
+            const productRows = document.querySelectorAll('.product-row');
+            totalFormsInput.value = productRows.length;
+        }
+    }
+    
+    function handleProductChange(select) {
+        const productId = select.value;
+        const row = select.closest('.product-row');
+        const priceInput = row.querySelector('.price-input');
+        const productInfo = row.querySelector('.product-info');
+        const productDetails = row.querySelector('.product-details');
+        
+        if (productId && products[productId]) {
+            const product = products[productId];
+            priceInput.value = product.selling_price;
+            productDetails.textContent = `Stock: ${product.current_stock} ${product.unit_type}`;
+            productInfo.style.display = 'block';
+            calculateTotal(priceInput);
+        } else {
+            priceInput.value = '';
+            productInfo.style.display = 'none';
+        }
+    }
+    
+    function calculateTotal(input) {
+        const row = input.closest('.product-row');
+        const quantityInput = row.querySelector('.quantity-input');
+        const priceInput = row.querySelector('.price-input');
+        const totalInput = row.querySelector('.total-input');
+        
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const total = quantity * price;
+        
+        totalInput.value = total.toFixed(2);
+    }
+    
+    function filterProducts(filterSelect) {
+        const row = filterSelect.closest('.product-row');
+        const productSelect = row.querySelector('.product-select');
+        const categorySelect = row.querySelector('.category-select');
+        const brandSelect = row.querySelector('.brand-select');
+        
+        const selectedCategory = categorySelect.value;
+        const selectedBrand = brandSelect.value;
+        
+        // Clear current options
+        productSelect.innerHTML = '<option value="">Select Product</option>';
+        
+        // Filter products based on category and brand
+        Object.values(products).forEach(product => {
+            if ((!selectedCategory || product.category_id == selectedCategory) &&
+                (!selectedBrand || product.brand_id == selectedBrand)) {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.name} (${product.unit_type}) - ৳${product.selling_price}`;
+                productSelect.appendChild(option);
+            }
+        });
+    }
+    
+    function createTemplateRow() {
+        const templateRow = document.createElement('div');
+        templateRow.className = 'product-row row mb-3 p-3 border rounded formset-form';
+        templateRow.innerHTML = `
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="bi bi-tags"></i> Category <small class="text-muted">(Filter)</small>
+                </label>
+                <select class="form-select category-select" name="category_0">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="bi bi-award"></i> Brand <small class="text-muted">(Filter)</small>
+                </label>
+                <select class="form-select brand-select" name="brand_0">
+                    <option value="">All Brands</option>
+                    {% for brand in brands %}
+                    <option value="{{ brand.id }}">{{ brand.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">
+                    <i class="bi bi-box-seam"></i> Product <span class="text-danger fw-bold">*</span>
+                </label>
+                <select class="form-select product-select" name="items-0-product">
+                    <option value="">Select Product</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }} ({{ product.unit_type }}) - ৳{{ product.selling_price }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="bi bi-hash"></i> Quantity <span class="text-danger fw-bold">*</span>
+                </label>
+                <input type="number" class="form-control quantity-input" name="items-0-quantity" step="0.01" min="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="bi bi-currency-dollar"></i> Unit Price <span class="text-danger fw-bold">*</span>
+                </label>
+                <input type="number" class="form-control price-input" name="items-0-unit_price" step="0.01" min="0">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Total</label>
+                <input type="number" class="form-control total-input" name="items-0-total_price" step="0.01" readonly>
+            </div>
+            <div class="col-12 mt-2">
+                <div class="product-info" style="display: none;">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i> 
+                        <span class="product-details"></span>
+                    </small>
+                </div>
+            </div>
+        `;
+        return templateRow;
+    }
+    
+    function updateSaleSummary() {
+        const productRows = document.querySelectorAll('.product-row');
+        let totalItems = 0;
+        let totalAmount = 0;
+        
+        productRows.forEach(row => {
+            const quantityInput = row.querySelector('.quantity-input');
+            const totalInput = row.querySelector('.total-input');
+            
+            if (quantityInput && totalInput) {
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const total = parseFloat(totalInput.value) || 0;
+                
+                if (quantity > 0) {
+                    totalItems += quantity;
+                }
+                totalAmount += total;
+            }
+        });
+        
+        // Update display
+        document.getElementById('total-items').textContent = totalItems.toFixed(2);
+        document.getElementById('total-amount').textContent = `৳${totalAmount.toFixed(2)}`;
+    }
+});
+</script>
+{% endblock %}

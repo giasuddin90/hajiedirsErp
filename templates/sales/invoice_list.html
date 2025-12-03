@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Sales Invoices{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'sales:invoice_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Invoice
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list"></i>
+                    Sales Invoices
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if invoices %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Payment Type</th>
+                                <th>Total Amount</th>
+                                <th>Paid Amount</th>
+                                <th>Due Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in invoices %}
+                            <tr>
+                                <td>
+                                    <strong>{{ invoice.invoice_number }}</strong>
+                                    {% if invoice.sales_order %}
+                                        <br><small class="text-muted">From: {{ invoice.sales_order.order_number }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ invoice.customer.name }}</td>
+                                <td>{{ invoice.invoice_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge {% if invoice.payment_type == 'cash' %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ invoice.get_payment_type_display }}
+                                    </span>
+                                </td>
+                                <td>৳{{ invoice.total_amount|floatformat:2 }}</td>
+                                <td>৳{{ invoice.paid_amount|floatformat:2 }}</td>
+                                <td>
+                                    <span class="{% if invoice.due_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ৳{{ invoice.due_amount|floatformat:2 }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'sales:invoice_detail' invoice.pk %}" class="btn btn-outline-primary" title="View">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'sales:invoice_edit' invoice.pk %}" class="btn btn-outline-secondary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'sales:invoice_delete' invoice.pk %}" class="btn btn-outline-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">No invoices found.</p>
+                    <a href="{% url 'sales:invoice_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add First Invoice
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

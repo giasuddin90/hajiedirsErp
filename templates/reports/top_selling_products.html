@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Top Selling Products Report{% endblock %}
+
+{% block page_title %}Top Selling Products Report{% endblock %}
+{% block page_description %}Analysis of best performing products with time range filtering{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'reports:download_top_products_csv' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success">
+        <i class="bi bi-download"></i> Download CSV
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="bi bi-printer"></i> Print
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-calendar-range"></i>
+            Filter by Date Range
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+            </div>
+            <div class="col-md-4">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+                <a href="{% url 'reports:top_selling_products' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-box-seam"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">{{ total_products_sold }}</h3>
+            <p>Products Sold</p>
+            <small class="text-primary">Unique products</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card success">
+            <div class="icon success">
+                <i class="bi bi-cart-check"></i>
+            </div>
+            <h3 style="color: var(--success-color);">{{ total_quantity_sold|floatformat:0 }}</h3>
+            <p>Total Quantity</p>
+            <small class="text-success">Units sold</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card info">
+            <div class="icon info">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <h3 style="color: var(--info-color);">৳{{ total_value_sold|floatformat:0 }}</h3>
+            <p>Total Value</p>
+            <small class="text-info">Revenue generated</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card warning">
+            <div class="icon warning">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <h3 style="color: var(--warning-color);">৳{{ average_price|floatformat:0 }}</h3>
+            <p>Average Price</p>
+            <small class="text-warning">Per unit sold</small>
+        </div>
+    </div>
+</div>
+
+
+<!-- Top Products Table -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ol"></i>
+                    Top Selling Products Ranking
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Product Name</th>
+                                <th>Brand</th>
+                                <th>Category</th>
+                                <th>Quantity Sold</th>
+                                <th>Total Value</th>
+                                <th>Orders</th>
+                                <th>Avg. Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ forloop.counter }}</span>
+                                </td>
+                                <td>{{ product.product_name }}</td>
+                                <td>{{ product.product_brand }}</td>
+                                <td>{{ product.product_category }}</td>
+                                <td>{{ product.total_quantity|floatformat:0 }}</td>
+                                <td>৳{{ product.total_value|floatformat:0 }}</td>
+                                <td>{{ product.order_count }}</td>
+                                <td>৳{{ product.average_price|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">No products sold in the selected period</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

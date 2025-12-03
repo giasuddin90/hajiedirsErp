@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block page_title %}
+    {% if object %}Edit Ledger Entry{% else %}Add Manual Ledger Entry{% endif %}
+{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'customers:customer_ledger_detail' customer_id %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Ledger
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    {% if object %}Edit Ledger Entry{% else %}Add Manual Ledger Entry{% endif %}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.transaction_type.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-tag me-1"></i>{{ form.transaction_type.label }} *
+                                </label>
+                                {{ form.transaction_type }}
+                                {% if form.transaction_type.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.transaction_type.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Select the type of transaction to record</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.amount.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-currency-dollar me-1"></i>{{ form.amount.label }} *
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text">৳</span>
+                                    {{ form.amount }}
+                                </div>
+                                {% if form.amount.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Enter the transaction amount</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Method Selection (shown only when Payment is selected) -->
+                    <div class="row" id="payment-method-section" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.payment_method.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-wallet2 me-1"></i>{{ form.payment_method.label }} *
+                                </label>
+                                {{ form.payment_method }}
+                                {% if form.payment_method.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.payment_method.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Select how the payment was made</div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.transaction_date.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-calendar3 me-1"></i>{{ form.transaction_date.label }} *
+                                </label>
+                                {{ form.transaction_date }}
+                                {% if form.transaction_date.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.transaction_date.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Date when the transaction occurred</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label for="{{ form.reference.id_for_label }}" class="form-label fw-bold">
+                                    <i class="bi bi-hash me-1"></i>{{ form.reference.label }}
+                                </label>
+                                {{ form.reference }}
+                                {% if form.reference.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.reference.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Optional reference number or code</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">
+                            <i class="bi bi-chat-text me-1"></i>{{ form.description.label }} *
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">Provide a detailed description of the transaction</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a href="{% url 'customers:customer_ledger_detail' customer_id %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle me-1"></i>
+                            {% if object %}Update{% else %}Create{% endif %} Ledger Entry
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Transaction Types Guide
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-dark me-2">Opening Balance</span>
+                            <small class="text-muted">Initial balance for the customer</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-primary me-2">Sale</span>
+                            <small class="text-muted">Increases balance (debit)</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-success me-2">Payment</span>
+                            <small class="text-muted">Decreases balance (credit)</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-warning me-2">Return</span>
+                            <small class="text-muted">Decreases balance (credit)</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-secondary me-2">Adjustment</span>
+                            <small class="text-muted">Balance adjustment</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-dark me-2">Commission</span>
+                            <small class="text-muted">Commission transactions</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    Quick Tips
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small>Use positive amounts for sales</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small>Use negative amounts for payments</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small>Be specific in descriptions</small>
+                    </li>
+                    <li class="mb-0">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small>Include reference numbers when available</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-select-lg, .form-control-lg {
+    border-radius: 0.5rem;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-select-lg:focus, .form-control-lg:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.input-group-lg .form-control {
+    border-left: none;
+}
+
+.input-group-lg .input-group-text {
+    border-right: none;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.card {
+    border: none;
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+    border: none;
+}
+
+.btn-lg {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.list-group-item {
+    padding: 0.75rem 0;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const transactionTypeField = document.querySelector('select[name="transaction_type"]');
+    const paymentMethodSection = document.getElementById('payment-method-section');
+    const paymentMethodField = document.querySelector('select[name="payment_method"]');
+    
+    // Set default date to today
+    const dateField = document.querySelector('input[type="date"]');
+    if (dateField && !dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+    }
+    
+    // Show/hide payment method section based on transaction type
+    function togglePaymentMethod() {
+        if (transactionTypeField.value === 'payment') {
+            paymentMethodSection.style.display = 'block';
+            paymentMethodField.required = true;
+        } else {
+            paymentMethodSection.style.display = 'none';
+            paymentMethodField.required = false;
+            paymentMethodField.value = '';
+        }
+    }
+    
+    // Initial checks
+    togglePaymentMethod();
+    
+    // Listen for changes
+    transactionTypeField.addEventListener('change', togglePaymentMethod);
+    
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    }
+    
+    // Amount field formatting
+    const amountField = document.querySelector('input[name="amount"]');
+    if (amountField) {
+        amountField.addEventListener('input', function() {
+            // Remove any non-numeric characters except decimal point
+            this.value = this.value.replace(/[^0-9.-]/g, '');
+        });
+    }
+    
+    // Transaction type change handler for amount help text
+    if (transactionTypeField && amountField) {
+        transactionTypeField.addEventListener('change', function() {
+            const type = this.value;
+            const amountHelp = amountField.parentNode.querySelector('.form-text');
+            
+            if (type === 'payment' || type === 'return') {
+                if (amountHelp) {
+                    amountHelp.textContent = 'Enter positive amount (will be recorded as credit)';
+                    amountHelp.className = 'form-text text-warning';
+                }
+            } else if (type === 'sale') {
+                if (amountHelp) {
+                    amountHelp.textContent = 'Enter positive amount (will be recorded as debit)';
+                    amountHelp.className = 'form-text text-info';
+                }
+            } else {
+                if (amountHelp) {
+                    amountHelp.textContent = 'Enter the transaction amount';
+                    amountHelp.className = 'form-text';
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

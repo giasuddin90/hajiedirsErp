@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Purchase Payments{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'purchases:payment_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Payment
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-credit-card me-2"></i>
+                    Purchase Payments
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Invoice</th>
+                                <th>Supplier</th>
+                                <th>Payment Method</th>
+                                <th>Bank Account</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-receipt text-primary me-2"></i>
+                                        <div>
+                                            <strong>{{ payment.purchase_invoice.invoice_number }}</strong>
+                                            {% if payment.reference %}
+                                                <br><small class="text-muted">Ref: {{ payment.reference }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-truck text-info me-2"></i>
+                                        <span>{{ payment.purchase_invoice.supplier.name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if payment.payment_method == 'cash' %}bg-success
+                                        {% elif payment.payment_method == 'bank_transfer' %}bg-primary
+                                        {% elif payment.payment_method == 'cheque' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {% if payment.payment_method == 'cash' %}
+                                            <i class="bi bi-cash me-1"></i>Cash
+                                        {% elif payment.payment_method == 'bank_transfer' %}
+                                            <i class="bi bi-bank me-1"></i>Bank Transfer
+                                        {% elif payment.payment_method == 'cheque' %}
+                                            <i class="bi bi-credit-card me-1"></i>Cheque
+                                        {% else %}
+                                            <i class="bi bi-question-circle me-1"></i>{{ payment.get_payment_method_display }}
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">-</span>
+                                </td>
+                                <td>
+                                    <div class="text-end">
+                                        <span class="fw-bold text-success">৳{{ payment.amount|floatformat:2 }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-calendar3 text-muted me-2"></i>
+                                        <span>{{ payment.payment_date|date:"M d, Y" }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'purchases:payment_edit' payment.pk %}" class="btn btn-outline-primary btn-sm" title="Edit Payment">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'purchases:payment_delete' payment.pk %}" class="btn btn-outline-danger btn-sm" title="Delete Payment">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-credit-card text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">No Payments Found</h4>
+                    <p class="text-muted">Start by recording your first payment to suppliers.</p>
+                    <a href="{% url 'purchases:payment_create' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle"></i> Add Your First Payment
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+.card {
+    border: none;
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+    border: none;
+}
+</style>
+{% endblock %}

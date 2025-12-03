@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Top Selling Customers Report{% endblock %}
+
+{% block page_title %}Top Selling Customers Report{% endblock %}
+{% block page_description %}Analysis of best performing customers with time range filtering{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'reports:download_top_customers_csv' %}?start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success">
+        <i class="bi bi-download"></i> Download CSV
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="bi bi-printer"></i> Print
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-calendar-range"></i>
+            Filter by Date Range
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+            </div>
+            <div class="col-md-4">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+                <a href="{% url 'reports:top_selling_customers' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-people"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">{{ total_customers }}</h3>
+            <p>Active Customers</p>
+            <small class="text-primary">Made purchases</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card success">
+            <div class="icon success">
+                <i class="bi bi-cart-check"></i>
+            </div>
+            <h3 style="color: var(--success-color);">{{ total_orders }}</h3>
+            <p>Total Orders</p>
+            <small class="text-success">Orders placed</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card info">
+            <div class="icon info">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <h3 style="color: var(--info-color);">৳{{ total_value|floatformat:0 }}</h3>
+            <p>Total Value</p>
+            <small class="text-info">Revenue generated</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card warning">
+            <div class="icon warning">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <h3 style="color: var(--warning-color);">৳{{ average_customer_value|floatformat:0 }}</h3>
+            <p>Avg. Customer Value</p>
+            <small class="text-warning">Per customer</small>
+        </div>
+    </div>
+</div>
+
+<!-- Top Customers Chart -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-bar-chart"></i>
+                    Top 10 Customers by Value
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="customersChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Customers Table -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ol"></i>
+                    Top Customers Ranking
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Customer Name</th>
+                                <th>Customer Type</th>
+                                <th>Total Orders</th>
+                                <th>Total Value</th>
+                                <th>Avg. Order Value</th>
+                                <th>Last Order</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in top_customers %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-primary">{{ forloop.counter }}</span>
+                                </td>
+                                <td>{{ customer.customer_name }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ customer.customer_type|title }}</span>
+                                </td>
+                                <td>{{ customer.total_orders }}</td>
+                                <td>৳{{ customer.total_value|floatformat:0 }}</td>
+                                <td>৳{{ customer.average_order_value|floatformat:0 }}</td>
+                                <td>{{ customer.last_order_date|date:"M d, Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No customers found in the selected period</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Top Customers Chart
+const customersCtx = document.getElementById('customersChart').getContext('2d');
+new Chart(customersCtx, {
+    type: 'bar',
+    data: {
+        labels: [
+            {% for customer in top_customers|slice:":10" %}
+                '{{ customer.customer_name|truncatechars:15 }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Sales Value (৳)',
+            data: [
+                {% for customer in top_customers|slice:":10" %}
+                    {{ customer.total_value }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(40, 167, 69, 0.8)',
+            borderColor: '#28a745',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'Sales: ৳' + context.parsed.y.toLocaleString();
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '৳' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

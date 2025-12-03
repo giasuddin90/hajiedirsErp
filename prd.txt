@@ -1,0 +1,364 @@
+
+Project Requirement Document (PRD)
+Project Title: Building Material Business Management System
+ Prepared For: [Your Business Name]
+ Date: [Insert Date]
+ Platform: Web (with Offline-first capability, Desktop optional, Mobile app future scope)
+
+1. Project Overview
+The system will manage the complete operations of a building material trading business. It covers:
+Bank & Loan Accounts
+
+
+Purchases (from PO)
+
+
+Sales (from SO)
+
+
+Customer & Supplier Management (with ledgers)
+
+
+Stock & Inventory Control
+
+
+Reports (Daily, Monthly, Trial Balance)
+
+
+Automation (SMS reminders, auto labor charges)
+
+
+The system ensures both retail and wholesale workflows and provides transparent financial control with trial balance-style reporting.
+
+2. Core Modules
+A. Bank Management
+Multiple bank accounts support.
+
+
+Record deposits, withdrawals, transfers.
+
+
+Loan Management:
+
+
+Open loan using Deal Number.
+
+
+Record loan-related transactions.
+
+
+Track profit/interest deducted.
+
+
+Close loan after repayment.
+
+
+Generate bank account statements (date range filter).
+
+
+
+B. Supplier (Company) Management
+Maintain supplier database with contact info & terms.
+
+
+Purchase Workflow:
+
+
+Purchase Order (PO) → Goods Receipt → Purchase Invoice.
+
+
+Track dues for each supplier: product-wise & amount-wise.
+
+
+Supplier Ledger: credit purchases, payments, dues.
+
+
+Option for supplier commission or discounts.
+
+
+
+C. Customer (Party) Management
+Maintain database of Retail & Wholesale customers.
+
+
+Sales Workflow:
+
+
+Sales Order (SO) → Delivery → Sales Invoice.
+
+
+Customer-specific ledger:
+
+
+Sales, returns, collections, adjustments.
+
+
+Dues in product & amount terms.
+
+
+Wholesale Party Features:
+
+
+Monthly product & collection summary.
+
+
+Brand-specific sales report (e.g., cement bags by brand/month).
+
+
+Commission adjustments.
+
+
+Retail Party Features:
+
+
+Credit & cash sales tracking.
+
+
+Commitment date for payments (with SMS reminder).
+
+
+Commission List: assignable per transaction or per party.
+
+
+
+D. Purchase Management
+Purchase Order Creation: supplier, product, quantity, rate.
+
+
+Goods Receipt updates stock automatically.
+
+
+Purchase Invoice: supports credit or cash purchase.
+
+
+Supplier Ledger auto-updated.
+
+
+
+E. Sales Management
+Sales Order Creation: customer, product, quantity, rate.
+
+
+Sales Invoice generation.
+
+
+Cash Sale or Credit Sale option.
+
+
+Auto SMS to customers on invoice creation.
+
+
+Retail Sales: auto-add labor charges.
+
+
+Wholesale Sales: exclude labor charges.
+
+
+Customer Ledger auto-updated.
+
+
+
+F. Stock & Inventory Management
+Track stock by warehouse/godown.
+
+
+Product categories:
+
+
+Cement (bags)
+
+
+Rod (bundle, pcs, kg)
+
+
+Tiles (sqft)
+
+
+Paint (liters)
+
+
+Others
+
+
+Real-time stock update on purchase & sale.
+
+
+Stock report: bundle, pcs, kgs, liters, sqft, etc.
+
+
+Alerts for low stock.
+
+
+Stock valuation.
+
+
+
+G. Reporting
+Daily Report
+Total sales (cash & credit).
+
+
+Total collections.
+
+
+Bank deposits.
+
+
+Loan repayments / deductions.
+
+
+Number of sales invoices.
+
+
+Cash vs. due summary.
+
+
+Monthly Report
+Sales summary by customer.
+
+
+Collection summary by customer.
+
+
+Supplier purchase summary.
+
+
+Profit/loss analysis.
+
+
+Bank Report
+Account statements.
+
+
+Loan deal report.
+
+
+Stock Report
+Stock by warehouse.
+
+
+Stock movements (inward/outward).
+
+
+
+H. Ledger Management
+Customer Ledger: invoices, returns, payments, dues, commissions.
+
+
+Supplier Ledger: purchases, payments, dues.
+
+
+Bank Ledger: deposits, withdrawals, loans.
+
+
+
+I. Trial Balance (Cash Accounting)
+Cash Inflows (Debit Side):
+
+
+Cash sales (retail + wholesale).
+
+
+Customer collections (credit recovery).
+
+
+Bank withdrawals.
+
+
+Loan received in cash.
+
+
+Other income.
+
+
+Cash Outflows (Credit Side):
+
+
+Cash purchases.
+
+
+Expenses (transport, wages, utilities, etc.).
+
+
+Bank deposits.
+
+
+Loan repayments.
+
+
+Commission payments.
+
+
+Cash in Hand:
+
+
+Opening balance + inflows – outflows = Closing balance.
+
+
+Balancing Rule:
+
+
+Debit Side = Credit Side + Closing Balance.
+
+
+If mismatch → system flags discrepancy.
+
+
+Reports:
+
+
+Daily Trial Balance.
+
+
+Monthly Trial Balance.
+
+
+Export to Excel/PDF.
+
+
+
+J. Automation & Notifications
+SMS on sales invoice creation (retail & wholesale).
+
+
+SMS reminder for due commitments.
+
+
+Auto-add labor charges for retail invoices (not wholesale).
+
+
+Auto-reminder for due dates in customer ledger.
+
+
+
+3. Functional Requirements
+Multi-user system with role-based access (Admin, Accountant, Sales, Stock Manager).
+
+
+Offline-first with online sync capability.
+
+
+Data export to Excel, PDF.
+
+
+Audit trail: who added/edited transactions.
+
+
+
+4. Non-Functional Requirements
+Performance: Daily reports within 10 seconds.
+
+
+Scalability: Handle 10,000+ transactions/month.
+
+
+Reliability: Auto backup system.
+
+
+Security: Role-based authentication, data encryption.
+
+
+
+✅ This PRD now includes everything: Bank, Supplier, Customer, Purchase, Sales, Stock, Ledger, Reports, Trial Balance, and Automation.
+
+

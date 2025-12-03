@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock - Building Materials ERP{% endblock %}
+
+{% block page_title %}Stock Management{% endblock %}
+
+{% block page_actions %}
+{# Alert and dashboard URLs removed #}
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card-module primary">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Total Products</h6>
+                    <h3 class="card-module-value">{{ total_products }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-boxes"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-module success">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">In Stock</h6>
+                    <h3 class="card-module-value">{{ in_stock }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-module warning">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Low Stock</h6>
+                    <h3 class="card-module-value">{{ low_stock }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-module danger">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Out of Stock</h6>
+                    <h3 class="card-module-value">{{ out_of_stock }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card-module info">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Total Stock Value</h6>
+                    <h3 class="card-module-value">৳{{ total_stock_value|floatformat:2|default:"0.00" }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-boxes"></i>
+                    Current Stock Levels
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if stock_data %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Brand</th>
+                                <th>Quantity</th>
+                                <th>Unit Cost</th>
+                                <th>Total Value</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in stock_data %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.product.name }}</strong>
+                                    <br><small class="text-muted">{{ item.product.description|truncatewords:10|default:"No description" }}</small>
+                                </td>
+                                <td>{{ item.product.category|default:"-" }}</td>
+                                <td>{{ item.product.brand|default:"-" }}</td>
+                                <td>
+                                    <strong>{{ item.quantity }}</strong>
+                                    <br><small class="text-muted">{{ item.product.unit_type.name|default:item.product.unit_type.code }}</small>
+                                    <br><small class="text-muted">Min: {{ item.product.min_stock_level }}</small>
+                                </td>
+                                <td>৳{{ item.product.cost_price|floatformat:2 }}</td>
+                                <td>
+                                    {% with value=item.product.get_total_stock_value %}
+                                        ৳{{ value|floatformat:2|default:"0.00" }}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    {% if item.status == 'out_of_stock' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> Out of Stock
+                                        </span>
+                                    {% elif item.status == 'low_stock' %}
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-exclamation-triangle"></i> Low Stock
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> In Stock
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'stock:stock_detail' item.product.pk %}" class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'stock:product_detail' item.product.pk %}" class="btn btn-outline-info" title="Product Details">
+                                            <i class="bi bi-box-seam"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-boxes fs-1 text-muted"></i>
+                    <h5 class="text-muted mt-3">No products found</h5>
+                    <p class="text-muted">Products will appear here once they are created.</p>
+                    <a href="{% url 'stock:product_list' %}" class="btn btn-primary">
+                        <i class="bi bi-box-seam"></i> Manage Products
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Set Opening Balance - {{ supplier.name }} - Building Materials ERP{% endblock %}
+
+{% block page_title %}Set Opening Balance - {{ supplier.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'suppliers:supplier_ledger_detail' supplier.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Ledger
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-wallet2 me-2"></i>
+                    Set Opening Balance
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Current Opening Balance:</strong> ৳{{ supplier.opening_balance|floatformat:2 }}
+                </div>
+                
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label fw-bold">
+                            <i class="bi bi-currency-dollar me-1"></i>{{ form.amount.label }} *
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">৳</span>
+                            {{ form.amount }}
+                        </div>
+                        {% if form.amount.help_text %}
+                            <div class="form-text">{{ form.amount.help_text }}</div>
+                        {% endif %}
+                        {% if form.amount.errors %}
+                            <div class="text-danger small">{{ form.amount.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Warning:</strong> Setting a new opening balance will replace the current opening balance and create a ledger entry.
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a href="{% url 'suppliers:supplier_ledger_detail' supplier.pk %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-left me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-warning btn-lg">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Set Opening Balance
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    Opening Balance Guide
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-success">Positive Balance (Debit)</h6>
+                        <ul class="list-unstyled small">
+                            <li><i class="bi bi-check-circle text-success me-1"></i>Supplier owes you money</li>
+                            <li><i class="bi bi-check-circle text-success me-1"></i>You have credit with supplier</li>
+                            <li><i class="bi bi-check-circle text-success me-1"></i>Example: ৳5,000</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-danger">Negative Balance (Credit)</h6>
+                        <ul class="list-unstyled small">
+                            <li><i class="bi bi-check-circle text-danger me-1"></i>You owe supplier money</li>
+                            <li><i class="bi bi-check-circle text-danger me-1"></i>Supplier has credit with you</li>
+                            <li><i class="bi bi-check-circle text-danger me-1"></i>Example: -৳3,000</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.input-group-lg .form-control {
+    border-left: none;
+}
+
+.input-group-lg .input-group-text {
+    border-right: none;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.card {
+    border: none;
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+    border: none;
+}
+
+.btn-lg {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.alert {
+    border-radius: 0.75rem;
+    border: none;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.needs-validation');
+    const amountField = document.querySelector('input[name="amount"]');
+    
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    }
+    
+    if (amountField) {
+        amountField.addEventListener('input', function() {
+            // Allow negative values for credit balances
+            const value = parseFloat(this.value);
+            if (value < 0) {
+                this.classList.add('text-danger');
+                this.classList.remove('text-success');
+            } else if (value > 0) {
+                this.classList.add('text-success');
+                this.classList.remove('text-danger');
+            } else {
+                this.classList.remove('text-danger', 'text-success');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

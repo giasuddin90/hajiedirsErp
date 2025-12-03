@@ -1,0 +1,461 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Building Materials ERP{% endblock %}
+
+{% block page_title %}Welcome to BuildERP{% endblock %}
+{% block page_description %}Your comprehensive construction management dashboard{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <button class="btn btn-primary" onclick="refreshDashboard()">
+        <i class="bi bi-arrow-clockwise"></i> Refresh
+    </button>
+    <button class="btn btn-outline-primary" onclick="exportDashboard()">
+        <i class="bi bi-download"></i> Export
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Financial KPI Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="stats-card success">
+            <div class="icon success">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <h3 style="color: var(--success-color);">৳{{ total_sales|default:0|floatformat:0 }}</h3>
+            <p>Monthly Revenue</p>
+            <small class="{% if sales_growth >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {% if sales_growth >= 0 %}+{% endif %}{{ sales_growth|default:0 }}% from last month
+            </small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="stats-card info">
+            <div class="icon info">
+                <i class="bi bi-arrow-down-circle"></i>
+            </div>
+            <h3 style="color: var(--info-color);">৳{{ total_receivables|default:0|floatformat:0 }}</h3>
+            <p>Total Receivables</p>
+            <small class="text-info">Money owed to you</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="300">
+        <div class="stats-card warning">
+            <div class="icon warning">
+                <i class="bi bi-arrow-up-circle"></i>
+            </div>
+            <h3 style="color: var(--warning-color);">৳{{ total_payables|default:0|floatformat:0 }}</h3>
+            <p>Total Payables</p>
+            <small class="text-warning">Money you owe</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="400">
+        <div class="stats-card danger">
+            <div class="icon danger">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <h3 style="color: var(--danger-color);">৳{{ total_expenses|default:0|floatformat:0 }}</h3>
+            <p>Total Expenses</p>
+            <small class="text-danger">Monthly expenses</small>
+        </div>
+    </div>
+</div>
+
+<!-- Business Intelligence Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">{{ total_customers|default:0 }}</h3>
+            <p>Active Customers</p>
+            <small class="text-primary">Customer base</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="stats-card secondary">
+            <div class="icon secondary">
+                <i class="bi bi-truck-fill"></i>
+            </div>
+            <h3 style="color: var(--secondary-color);">{{ total_suppliers|default:0 }}</h3>
+            <p>Active Suppliers</p>
+            <small class="text-secondary">Supplier network</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="300">
+        <div class="stats-card dark">
+            <div class="icon dark">
+                <i class="bi bi-box-seam-fill"></i>
+            </div>
+            <h3 style="color: var(--dark-color);">{{ total_products|default:0 }}</h3>
+            <p>Product Catalog</p>
+            <small class="text-dark">Total products</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="400">
+        <div class="stats-card {% if profit_margin >= 0 %}success{% else %}danger{% endif %}">
+            <div class="icon {% if profit_margin >= 0 %}success{% else %}danger{% endif %}">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <h3 style="color: {% if profit_margin >= 0 %}var(--success-color){% else %}var(--danger-color){% endif %};">
+                {{ profit_margin|default:0 }}%
+            </h3>
+            <p>Profit Margin</p>
+            <small class="{% if profit_margin >= 0 %}text-success{% else %}text-danger{% endif %}">
+                Monthly profitability
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- Business Intelligence Tables -->
+<div class="row">
+    <!-- Top Customers by Balance -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-people"></i>
+                    Top Customers (Receivables)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Balance</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in top_customers %}
+                            <tr>
+                                <td>{{ customer.name }}</td>
+                                <td class="text-info">৳{{ customer.current_balance|floatformat:0 }}</td>
+                                <td><span class="badge bg-primary">{{ customer.customer_type|title }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No outstanding receivables</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Suppliers by Balance -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-truck"></i>
+                    Top Suppliers (Payables)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Supplier</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for supplier in top_suppliers %}
+                            <tr>
+                                <td>{{ supplier.name }}</td>
+                                <td class="text-warning">৳{{ supplier.current_balance|floatformat:0 }}</td>
+                                <td>
+                                    {% if supplier.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No outstanding payables</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Sales Orders -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i>
+                    Recent Sales Orders
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.customer.name }}</td>
+                                <td>{{ order.order_date|date:"M d, Y" }}</td>
+                                <td>৳{{ order.total_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No recent orders</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Purchase Orders -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-cart-dash"></i>
+                    Recent Purchase Orders
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Supplier</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for purchase in recent_purchases %}
+                            <tr>
+                                <td>{{ purchase.order_number }}</td>
+                                <td>{{ purchase.supplier.name }}</td>
+                                <td>{{ purchase.order_date|date:"M d, Y" }}</td>
+                                <td>৳{{ purchase.total_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No recent purchases</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Low Stock Alerts -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Low Stock Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Current Stock</th>
+                                <th>Min Level</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alert in low_stock_alerts %}
+                            <tr>
+                                <td>{{ alert.product.name }}</td>
+                                <td class="text-danger">{{ alert.current_quantity }}</td>
+                                <td>{{ alert.min_quantity }}</td>
+                                <td>
+                                    {% if alert.current_quantity <= 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Low Stock</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No low stock alerts</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Sales Trend Chart -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up"></i>
+                    Sales Trend (Last 6 Months)
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sales Trend Chart with Real Data
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+new Chart(salesCtx, {
+    type: 'line',
+    data: {
+        labels: {{ sales_trend_data.labels|safe }},
+        datasets: [{
+            label: 'Sales (৳)',
+            data: {{ sales_trend_data.data|safe }},
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return 'Sales: ৳' + context.parsed.y.toLocaleString();
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '৳' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+
+
+// Dashboard functions
+function refreshDashboard() {
+    location.reload();
+}
+
+function exportDashboard() {
+    // Create a simple CSV export
+    const data = [
+        ['Metric', 'Value'],
+        ['Monthly Revenue', '৳{{ total_sales|default:0|floatformat:0 }}'],
+        ['Total Receivables', '৳{{ total_receivables|default:0|floatformat:0 }}'],
+        ['Total Payables', '৳{{ total_payables|default:0|floatformat:0 }}'],
+        ['Net Cash Flow', '৳{{ net_cash_flow|default:0|floatformat:0 }}'],
+        ['Profit Margin', '{{ profit_margin|default:0 }}%'],
+        ['Active Customers', '{{ total_customers|default:0 }}'],
+        ['Active Suppliers', '{{ total_suppliers|default:0 }}'],
+        ['Total Products', '{{ total_products|default:0 }}']
+    ];
+    
+    const csvContent = data.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'dashboard_export_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// Auto-refresh every 5 minutes
+setInterval(function() {
+    // Refresh only the data, not the entire page
+    console.log('Auto-refreshing dashboard data...');
+}, 300000);
+
+// Add animation effects
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate counters
+    const counters = document.querySelectorAll('.stats-card h3');
+    counters.forEach(counter => {
+        const target = parseInt(counter.textContent.replace(/[^\d]/g, ''));
+        if (target > 0) {
+            animateCounter(counter, target);
+        }
+    });
+});
+
+function animateCounter(element, target) {
+    let current = 0;
+    const increment = target / 50;
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            current = target;
+            clearInterval(timer);
+        }
+        const prefix = element.textContent.includes('৳') ? '৳' : '';
+        const suffix = element.textContent.includes('%') ? '%' : '';
+        element.textContent = prefix + Math.floor(current).toLocaleString() + suffix;
+    }, 30);
+}
+</script>
+{% endblock %}

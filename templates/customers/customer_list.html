@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}Customers - Building Materials ERP{% endblock %}
+
+{% block page_title %}Customers{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Customer
+    </a>
+    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="bi bi-funnel"></i> Filter
+    </button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#">All Customers</a></li>
+        <li><a class="dropdown-item" href="#">Active Only</a></li>
+        <li><a class="dropdown-item" href="#">Inactive Only</a></li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card" style="background-color: #f8f9fa;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title" style="color: var(--text-primary);">Total Customers</h6>
+                        <h3 class="mb-0" style="color: var(--primary-color);">{{ customers|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people" style="font-size: 2rem; color: var(--primary-color);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card" style="background-color: #f8f9fa;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title" style="color: var(--text-primary);">Active</h6>
+                        <h3 class="mb-0" style="color: var(--success-color);">{{ active_customers }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle" style="font-size: 2rem; color: var(--success-color);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card" style="background-color: #f8f9fa;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title" style="color: var(--text-primary);">Total Receivable</h6>
+                        <h3 class="mb-0" style="color: var(--info-color);">৳{{ total_receivable|floatformat:2 }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-arrow-up-circle" style="font-size: 2rem; color: var(--info-color);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customers Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ul me-2"></i>
+                    Customer List
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if customers %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Customer</th>
+                                <th>Contact</th>
+                                <th>Current Balance</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in customers %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ customer.name }}</h6>
+                                            <small class="text-muted">{{ customer.get_customer_type_display }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-telephone me-2 text-muted"></i>
+                                        <span>{{ customer.phone|default:"No phone" }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="text-end">
+                                        <div class="fw-bold {% if customer.current_balance >= 0 %}text-danger{% else %}text-success{% endif %}">
+                                            ৳{{ customer.current_balance|floatformat:2 }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge {% if customer.is_active %}bg-success{% else %}bg-danger{% endif %} fs-6">
+                                        {% if customer.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'customers:customer_detail' customer.pk %}" class="btn btn-outline-primary btn-sm" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'customers:customer_edit' customer.pk %}" class="btn btn-outline-warning btn-sm" title="Edit Customer">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'customers:customer_ledger_detail' customer.pk %}" class="btn btn-outline-info btn-sm" title="View Ledger">
+                                            <i class="bi bi-journal-text"></i>
+                                        </a>
+                                        <a href="{% url 'customers:customer_opening_balance' customer.pk %}" class="btn btn-outline-success btn-sm" title="Set Opening Balance">
+                                            <i class="bi bi-wallet2"></i>
+                                        </a>
+                                        <a href="{% url 'sales:order_create' %}" class="btn btn-outline-secondary btn-sm" title="New Sales Order">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </a>
+                                        <a href="{% url 'customers:customer_delete' customer.pk %}" class="btn btn-outline-danger btn-sm" title="Delete Customer">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">No Customers Found</h4>
+                    <p class="text-muted">Start by adding your first customer to manage your sales.</p>
+                    <a href="{% url 'customers:customer_create' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle"></i> Add Your First Customer
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+.card {
+    border: none;
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+    border: none;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Customer Ledger - {{ customer.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'customers:customer_detail' customer.pk %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Customer
+    </a>
+    <a href="{% url 'customers:customer_ledger_create' customer.pk %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add Manual Entry
+    </a>
+    <a href="{% url 'customers:customer_opening_balance' customer.pk %}" class="btn btn-warning">
+        <i class="bi bi-wallet2"></i> Set Opening Balance
+    </a>
+    <a href="{% url 'sales:order_create' %}" class="btn btn-success">
+        <i class="bi bi-cart-plus"></i> New Sales Order
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card-module primary">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Opening Balance</h6>
+                    <h3 class="card-module-value">৳{{ opening_balance|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card-module info">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Total Sales</h6>
+                    <h3 class="card-module-value">৳{{ total_debit|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-arrow-up-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card-module success">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Total Payments</h6>
+                    <h3 class="card-module-value">৳{{ total_credit|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-arrow-down-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card-module {% if current_balance >= 0 %}danger{% else %}success{% endif %}">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Current Balance</h6>
+                    <h3 class="card-module-value">৳{{ current_balance|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon">
+                    <i class="bi bi-{% if current_balance >= 0 %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Information -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-person me-2"></i>
+                    Customer Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> {{ customer.name }}</p>
+                        <p><strong>Type:</strong> {{ customer.get_customer_type_display }}</p>
+                        <p><strong>Contact Person:</strong> {{ customer.contact_person|default:"Not specified" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Phone:</strong> {{ customer.phone|default:"Not provided" }}</p>
+                        <p><strong>Email:</strong> {{ customer.email|default:"Not provided" }}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="badge {% if customer.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if customer.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-journal-text me-2"></i>
+                    Transaction History
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Reference</th>
+                                <th>Description</th>
+                                <th>Payment Method</th>
+                                <th class="text-end">Debit</th>
+                                <th class="text-end">Credit</th>
+                                <th class="text-end">Balance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if transaction.type == 'Opening Balance' %}bg-dark
+                                        {% elif transaction.type == 'Sales Order' %}bg-primary
+                                        {% elif transaction.type == 'Sales Invoice' %}bg-info
+                                        {% elif transaction.type == 'Payment' %}bg-success
+                                        {% elif transaction.type == 'Return' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ transaction.type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <code>{{ transaction.reference }}</code>
+                                </td>
+                                <td>{{ transaction.description }}</td>
+                                <td>
+                                    {% if transaction.payment_method %}
+                                        <span class="badge 
+                                            {% if transaction.payment_method == 'cash' %}bg-success
+                                            {% elif transaction.payment_method == 'bank_transfer' %}bg-primary
+                                            {% elif transaction.payment_method == 'cheque' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {% if transaction.payment_method == 'cash' %}
+                                                <i class="bi bi-cash me-1"></i>Cash
+                                            {% elif transaction.payment_method == 'bank_transfer' %}
+                                                <i class="bi bi-bank me-1"></i>Bank
+                                            {% elif transaction.payment_method == 'cheque' %}
+                                                <i class="bi bi-credit-card me-1"></i>Cheque
+                                            {% else %}
+                                                {{ transaction.payment_method|title }}
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if transaction.debit > 0 %}
+                                        <span class="text-danger">৳{{ transaction.debit|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if transaction.credit > 0 %}
+                                        <span class="text-success">৳{{ transaction.credit|floatformat:2 }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <strong class="{% if transaction.balance >= 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ৳{{ transaction.balance|floatformat:2 }}
+                                    </strong>
+                                </td>
+                                <td>
+                                    {% if transaction.status == 'draft' %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                    {% elif transaction.status == 'confirmed' %}
+                                        <span class="badge bg-primary">Confirmed</span>
+                                    {% elif transaction.status == 'delivered' %}
+                                        <span class="badge bg-success">Delivered</span>
+                                    {% elif transaction.status == 'paid' %}
+                                        <span class="badge bg-success">Paid</span>
+                                    {% elif transaction.status == 'invoiced' %}
+                                        <span class="badge bg-info">Invoiced</span>
+                                    {% elif transaction.status == 'manual' %}
+                                        <span class="badge bg-dark">Manual</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ transaction.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-journal text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">No Transactions Found</h4>
+                    <p class="text-muted">Start by creating sales orders or adding manual ledger entries.</p>
+                    <div class="btn-group">
+                        <a href="{% url 'customers:customer_ledger_create' customer.pk %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Add Manual Entry
+                        </a>
+                        <a href="{% url 'sales:order_create' %}" class="btn btn-success">
+                            <i class="bi bi-cart-plus"></i> New Sales Order
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 1rem;
+}
+
+.card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+    border: none;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+</style>
+{% endblock %}
+
+
+
+

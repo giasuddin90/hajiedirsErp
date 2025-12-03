@@ -1,0 +1,205 @@
+# Django ERP System - Cursor Rules
+
+## Project Overview
+This is a minimal Django ERP (Enterprise Resource Planning) system focused on core business operations without banking, accounting, commission, or warehouse complexity.
+
+## Architecture
+- **Framework**: Django 5.2.7
+- **Database**: SQLite (minierp.sqlite)
+- **Frontend**: Bootstrap 5.3.2 with custom styling
+- **Icons**: Bootstrap Icons
+- **Charts**: Chart.js for reporting
+
+## Core Modules
+- **customers**: Customer management and ledgers
+- **suppliers**: Supplier management and ledgers  
+- **stock**: Product and inventory management (single location)
+- **sales**: Sales orders, invoices, and payments
+- **purchases**: Purchase orders, invoices, and payments
+- **reports**: Business reports and analytics
+- **core**: Main Django settings and configuration
+
+## Removed Features
+- ❌ **Banking**: No bank accounts, transactions, or loans
+- ❌ **Accounting**: No trial balance, expenses, or income tracking
+- ❌ **Commissions**: No customer or supplier commission tracking
+- ❌ **Warehouses**: Single location inventory management only
+- ❌ **Pre-calculated Stock**: No Stock model - inventory calculated in real-time
+- ❌ **Stock Adjustments**: No manual stock adjustments - use purchase/sales orders
+- ❌ **Persisted Stock Alerts**: Alerts calculated dynamically, not stored in database
+
+## Database Models
+
+### Customers
+- `Customer`: Customer information and balances
+- `CustomerLedger`: Transaction history
+- `CustomerCommitment`: Payment commitments
+
+### Suppliers  
+- `Supplier`: Supplier information and balances
+- `SupplierLedger`: Transaction history
+
+### Stock
+- `Product`: Product information and pricing
+  - Methods: `get_realtime_quantity()` - calculates current stock from transactions
+  - Methods: `get_total_stock_value()` - calculates total inventory value
+- `ProductCategory`: Product categories
+- `ProductBrand`: Product brands
+- `UnitType`: Unit of measurement types
+- **Inventory System**: Real-time calculation (no pre-calculated stock values)
+  - **Formula**: Stock = Total Purchase Received - Total Sales Delivered
+  - Inventory increases when purchase orders status = `goods-received`
+  - Inventory decreases when sales orders status = `delivered`
+  - Instant sales are automatically included (status = `delivered` when created)
+- **Stock Alerts**: Calculated dynamically based on `min_stock_level`
+  - Helper function: `get_low_stock_products()` in `stock/models.py`
+  - Alerts appear when: `current_quantity ≤ min_stock_level` AND `min_stock_level > 0`
+  - No database storage - computed in real-time
+  - Available on dashboard and `/stock/alerts/` page
+- **Removed Models**: 
+  - `Stock` - removed, inventory calculated in real-time
+  - `StockAlert` - removed, alerts calculated dynamically
+  - `StockAdjustment` - removed, use purchase/sales orders for adjustments
+
+### Sales
+- `SalesOrder`: Sales order header
+- `SalesOrderItem`: Order line items
+- `SalesInvoice`: Sales invoice header
+- `SalesInvoiceItem`: Invoice line items
+- `SalesReturn`: Sales return header
+- `SalesReturnItem`: Return line items
+- `SalesPayment`: Sales payment tracking
+
+### Purchases
+- `PurchaseOrder`: Purchase order header
+- `PurchaseOrderItem`: Order line items
+- `GoodsReceipt`: Goods receipt header
+- `GoodsReceiptItem`: Receipt line items
+- `PurchaseInvoice`: Purchase invoice header
+- `PurchaseInvoiceItem`: Invoice line items
+- `PurchaseReturn`: Purchase return header
+- `PurchaseReturnItem`: Return line items
+- `PurchasePayment`: Purchase payment tracking
+
+## Development Guidelines
+
+### Code Style
+- Follow Django best practices
+- Use descriptive variable and function names
+- Add docstrings for complex functions
+- Keep views focused and single-purpose
+- Use Django's built-in form handling
+
+### Database
+- Always create migrations for model changes
+- Use `python manage.py makemigrations` before `python manage.py migrate`
+- Test migrations on development database first
+- **Important**: Never create models that pre-calculate inventory values
+- **Important**: Always use real-time calculation from transactions (purchase/sales orders)
+
+### Templates
+- Use Bootstrap 5.3.2 for consistent styling
+- Follow the existing template structure in `templates/`
+- Use Django template tags and filters appropriately
+- Keep templates DRY (Don't Repeat Yourself)
+
+### Views
+- Use class-based views for CRUD operations
+- Use function-based views for complex business logic
+- Always handle form validation properly
+- Use Django's built-in authentication and permissions
+- **Inventory Views**: Use `Product.get_realtime_quantity()` for current stock
+- **Stock Alerts**: Use `get_low_stock_products()` helper function
+- Never query `Stock` model - it doesn't exist
+
+### URLs
+- Follow RESTful URL patterns
+- Use namespaced URLs for each app
+- Keep URL patterns organized and readable
+
+## File Structure
+```
+miniErp/
+├── core/                   # Main Django settings
+├── customers/             # Customer management
+├── suppliers/             # Supplier management
+├── stock/                 # Inventory management
+├── sales/                 # Sales management
+├── purchases/             # Purchase management
+├── reports/               # Reporting module
+├── templates/             # HTML templates
+├── static/                # Static files
+├── logs/                  # Application logs
+├── minierp.sqlite         # SQLite database
+└── .cursorrules           # This file
+```
+
+## Common Commands
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run development server
+python manage.py runserver
+
+# Create migrations
+python manage.py makemigrations
+
+# Apply migrations
+python manage.py migrate
+
+# Check for issues
+python manage.py check
+
+# Create superuser
+python manage.py createsuperuser
+```
+
+## Key Features
+- ✅ Customer and Supplier management
+- ✅ Product and inventory tracking (real-time calculation)
+- ✅ Sales order and invoice management
+- ✅ Purchase order and invoice management
+- ✅ Payment tracking
+- ✅ Business reporting
+- ✅ Responsive Bootstrap UI
+- ✅ PDF invoice generation
+- ✅ Real-time inventory calculation (no pre-calculated values)
+- ✅ Dynamic low stock alerts based on min_stock_level
+
+## Security Notes
+- Always validate user input
+- Use Django's CSRF protection
+- Implement proper authentication
+- Sanitize data before database operations
+- Use Django's built-in security features
+
+## Performance Considerations
+- Use `select_related()` and `prefetch_related()` for database queries
+- Implement pagination for large datasets
+- Use database indexes for frequently queried fields
+- Consider caching for frequently accessed data
+- **Inventory Calculation**: Real-time calculations use aggregate queries
+  - `Product.get_realtime_quantity()`: Sums purchase items (goods-received) minus sales items (delivered)
+  - Use `select_related()` for foreign keys when calculating inventory
+  - No N+1 queries - use bulk aggregation
+
+## Testing
+- Write unit tests for models and views
+- Test form validation and error handling
+- Test database migrations
+- Test URL routing and template rendering
+
+## Deployment
+- Use environment variables for sensitive settings
+- Configure proper database for production
+- Set up static file serving
+- Configure logging and monitoring
+- Use a production WSGI server (not Django's development server)
+
+## Maintenance
+- Regular database backups
+- Monitor application logs
+- Keep dependencies updated
+- Regular security audits
+- Performance monitoring

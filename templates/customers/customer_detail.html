@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ object.name }} - Building Materials ERP{% endblock %}
+
+{% block page_title %}{{ object.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'customers:customer_edit' object.pk %}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Edit
+    </a>
+    <a href="{% url 'customers:customer_delete' object.pk %}" class="btn btn-danger">
+        <i class="bi bi-trash"></i> Delete
+    </a>
+    <a href="{% url 'customers:customer_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Customers
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-person"></i>
+                    Customer Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ object.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Type:</strong></td>
+                                <td>
+                                    <span class="badge {% if object.customer_type == 'retail' %}bg-info{% else %}bg-primary{% endif %}">
+                                        {{ object.get_customer_type_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% if object.company_name %}
+                            <tr>
+                                <td><strong>Company:</strong></td>
+                                <td>{{ object.company_name }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    {% if object.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Contact Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Phone:</strong></td>
+                                <td>{{ object.phone|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Email:</strong></td>
+                                <td>{{ object.email|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Credit Limit:</strong></td>
+                                <td>৳{{ object.credit_limit|floatformat:2 }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if object.address %}
+                <div class="mt-3">
+                    <h6>Address</h6>
+                    <p class="text-muted">{{ object.address }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'customers:customer_edit' object.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Edit Customer
+                    </a>
+                    <a href="{% url 'sales:order_create' %}" class="btn btn-primary">
+                        <i class="bi bi-cart-plus"></i> New Sale
+                    </a>
+                    <a href="{% url 'customers:customer_ledger_detail' object.pk %}" class="btn btn-info">
+                        <i class="bi bi-journal-text"></i> View Ledger
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-clock"></i>
+                    Timestamps
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <strong>Created:</strong> {{ object.created_at|date:"M d, Y H:i" }}<br>
+                    <strong>Updated:</strong> {{ object.updated_at|date:"M d, Y H:i" }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

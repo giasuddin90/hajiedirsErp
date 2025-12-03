@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ object.product.name }} - Stock Details{% endblock %}
+
+{% block page_title %}Stock Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'stock:stock_edit' object.pk %}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Edit
+    </a>
+    <a href="{% url 'stock:stock_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Stock
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-boxes"></i>
+                    Stock Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Product Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Product:</strong></td>
+                                <td>{{ object.product.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Brand:</strong></td>
+                                <td>{{ object.product.brand|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Category:</strong></td>
+                                <td><span class="badge bg-secondary">{{ object.product.category.name }}</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Unit:</strong></td>
+                                <td><span class="badge bg-info">{{ object.product.unit_name }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Stock Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Warehouse:</strong></td>
+                                <td>{{ object.warehouse.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Quantity:</strong></td>
+                                <td>
+                                    <span class="badge {% if object.quantity <= object.product.min_stock_level %}bg-danger{% else %}bg-success{% endif %}">
+                                        {{ object.quantity }} {{ object.product.unit_name }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Unit Cost:</strong></td>
+                                <td>৳{{ object.unit_cost|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Value:</strong></td>
+                                <td>৳{{ object.total_value|floatformat:2 }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if object.quantity <= object.product.min_stock_level %}
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Low Stock Alert!</strong> 
+                    Current quantity ({{ object.quantity }}) is below minimum level ({{ object.product.min_stock_level }}).
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'stock:stock_edit' object.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Edit Stock
+                    </a>
+                    <a href="{% url 'stock:product_detail' object.product.pk %}" class="btn btn-info">
+                        <i class="bi bi-box-seam"></i> View Product
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-clock"></i>
+                    Timestamps
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <strong>Last Updated:</strong> {{ object.last_updated|date:"M d, Y H:i" }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profit & Loss Report - BuildERP{% endblock %}
+
+{% block page_title %}
+<div class="d-flex justify-content-between align-items-center">
+    <div>
+        <h1><i class="bi bi-graph-up"></i> Profit & Loss Report</h1>
+        <p class="text-muted mb-0">Comprehensive financial performance analysis</p>
+    </div>
+    <div>
+        <a href="{% url 'reports:download_profit_loss_csv' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" 
+           class="btn btn-success">
+            <i class="bi bi-download"></i> Download CSV
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Date Range Filter -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Report Period</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" 
+                       value="{{ start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" 
+                       value="{{ end_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search"></i> Generate Report
+                </button>
+                <a href="{% url 'reports:profit_loss' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <div class="text-success mb-2">
+                    <i class="bi bi-arrow-up-circle display-6"></i>
+                </div>
+                <h4 class="text-success">৳{{ sales_revenue|floatformat:0 }}</h4>
+                <p class="card-text">Sales Revenue</p>
+                <small class="text-muted">
+                    {% if sales_growth >= 0 %}+{% endif %}{{ sales_growth|floatformat:1 }}% vs previous period
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="text-warning mb-2">
+                    <i class="bi bi-box-seam display-6"></i>
+                </div>
+                <h4 class="text-warning">৳{{ cost_of_goods_sold|floatformat:0 }}</h4>
+                <p class="card-text">Cost of Goods Sold</p>
+                <small class="text-muted">Direct costs</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <div class="text-info mb-2">
+                    <i class="bi bi-calculator display-6"></i>
+                </div>
+                <h4 class="text-info">৳{{ gross_profit|floatformat:0 }}</h4>
+                <p class="card-text">Gross Profit</p>
+                <small class="text-muted">{{ gross_profit_margin|floatformat:1 }}% margin</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card {% if net_profit >= 0 %}border-success{% else %}border-danger{% endif %}">
+            <div class="card-body text-center">
+                <div class="{% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %} mb-2">
+                    <i class="bi bi-{% if net_profit >= 0 %}trending-up{% else %}trending-down{% endif %} display-6"></i>
+                </div>
+                <h4 class="{% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">৳{{ net_profit|floatformat:0 }}</h4>
+                <p class="card-text">Net Profit</p>
+                <small class="text-muted">{{ net_profit_margin|floatformat:1 }}% margin</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Profit & Loss Statement -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Profit & Loss Statement</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-end">Amount (৳)</th>
+                                <th class="text-end">% of Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Revenue Section -->
+                            <tr class="table-success">
+                                <td><strong>REVENUE</strong></td>
+                                <td class="text-end"><strong>{{ sales_revenue|floatformat:0 }}</strong></td>
+                                <td class="text-end"><strong>100.0%</strong></td>
+                            </tr>
+                            
+                            <!-- Cost of Goods Sold -->
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;&nbsp;Cost of Goods Sold</td>
+                                <td class="text-end">{{ cost_of_goods_sold|floatformat:0 }}</td>
+                                <td class="text-end">
+                                    {% if sales_revenue > 0 %}
+                                        {{ cogs_percentage|floatformat:1 }}%
+                                    {% else %}
+                                        0.0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            
+                            <!-- Gross Profit -->
+                            <tr class="table-info">
+                                <td><strong>GROSS PROFIT</strong></td>
+                                <td class="text-end"><strong>{{ gross_profit|floatformat:0 }}</strong></td>
+                                <td class="text-end"><strong>{{ gross_profit_margin|floatformat:1 }}%</strong></td>
+                            </tr>
+                            
+                            <!-- Operating Expenses -->
+                            <tr>
+                                <td><strong>OPERATING EXPENSES</strong></td>
+                                <td class="text-end"><strong>{{ operating_expenses|floatformat:0 }}</strong></td>
+                                <td class="text-end">
+                                    <strong>
+                                        {% if sales_revenue > 0 %}
+                                            {{ operating_expenses_percentage|floatformat:1 }}%
+                                        {% else %}
+                                            0.0%
+                                        {% endif %}
+                                    </strong>
+                                </td>
+                            </tr>
+                            
+                            <!-- Expense Categories -->
+                            {% for expense in expenses_by_category %}
+                            <tr>
+                                <td>&nbsp;&nbsp;&nbsp;&nbsp;{{ expense.category__name|default:"Uncategorized" }}</td>
+                                <td class="text-end">{{ expense.total|floatformat:0 }}</td>
+                                <td class="text-end">
+                                    {% if sales_revenue > 0 %}
+                                        {{ expense.percentage|floatformat:1 }}%
+                                    {% else %}
+                                        0.0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            <!-- Net Profit -->
+                            <tr class="{% if net_profit >= 0 %}table-success{% else %}table-danger{% endif %}">
+                                <td><strong>NET PROFIT</strong></td>
+                                <td class="text-end"><strong>{{ net_profit|floatformat:0 }}</strong></td>
+                                <td class="text-end"><strong>{{ net_profit_margin|floatformat:1 }}%</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Analysis Panel -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Financial Analysis</h5>
+            </div>
+            <div class="card-body">
+                <!-- Profitability Metrics -->
+                <div class="mb-4">
+                    <h6 class="text-primary">Profitability Metrics</h6>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h5 class="text-info">{{ gross_profit_margin|floatformat:1 }}%</h5>
+                                <small class="text-muted">Gross Margin</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="{% if net_profit_margin >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ net_profit_margin|floatformat:1 }}%
+                            </h5>
+                            <small class="text-muted">Net Margin</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Growth Analysis -->
+                <div class="mb-4">
+                    <h6 class="text-primary">Growth vs Previous Period</h6>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span>Revenue</span>
+                            <span class="badge {% if sales_growth >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if sales_growth >= 0 %}+{% endif %}{{ sales_growth|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span>Gross Profit</span>
+                            <span class="badge {% if gross_profit_growth >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if gross_profit_growth >= 0 %}+{% endif %}{{ gross_profit_growth|floatformat:1 }}%
+                            </span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span>Net Profit</span>
+                            <span class="badge {% if net_profit_growth >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if net_profit_growth >= 0 %}+{% endif %}{{ net_profit_growth|floatformat:1 }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Key Insights -->
+                <div>
+                    <h6 class="text-primary">Key Insights</h6>
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="bi bi-info-circle"></i>
+                            {% if gross_profit_margin > 30 %}
+                                Strong gross margin indicates good pricing strategy.
+                            {% elif gross_profit_margin > 15 %}
+                                Moderate gross margin - consider cost optimization.
+                            {% else %}
+                                Low gross margin - review pricing and costs.
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    {% if net_profit_margin < 5 %}
+                    <div class="alert alert-warning">
+                        <small>
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Low net margin - focus on expense management.
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Revenue Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="profitLossChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Profit & Loss Chart
+    const ctx = document.getElementById('profitLossChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Gross Profit', 'Cost of Goods Sold', 'Operating Expenses'],
+            datasets: [{
+                data: [
+                    {{ gross_profit }},
+                    {{ cost_of_goods_sold }},
+                    {{ operating_expenses }}
+                ],
+                backgroundColor: [
+                    '#28a745',  // Green for profit
+                    '#ffc107',  // Yellow for COGS
+                    '#dc3545'   // Red for expenses
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ৳${value.toLocaleString()} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

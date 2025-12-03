@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+
+{% block title %}Accounts Receivable Report{% endblock %}
+
+{% block page_title %}Accounts Receivable Report{% endblock %}
+{% block page_description %}Customer outstanding balances and aging analysis{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'reports:download_receivables_csv' %}" class="btn btn-success">
+        <i class="bi bi-download"></i> Download CSV
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="bi bi-printer"></i> Print
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-people"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">{{ total_customers }}</h3>
+            <p>Total Customers</p>
+            <small class="text-primary">With balances</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card info">
+            <div class="icon info">
+                <i class="bi bi-arrow-down-circle"></i>
+            </div>
+            <h3 style="color: var(--info-color);">৳{{ total_receivables|floatformat:0 }}</h3>
+            <p>Total Receivables</p>
+            <small class="text-info">Outstanding amount</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card warning">
+            <div class="icon warning">
+                <i class="bi bi-clock"></i>
+            </div>
+            <h3 style="color: var(--warning-color);">৳{{ aging_analysis.current|floatformat:0 }}</h3>
+            <p>Current (0-30 days)</p>
+            <small class="text-warning">Recent balances</small>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card danger">
+            <div class="icon danger">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h3 style="color: var(--danger-color);">৳{{ aging_analysis.over_90|floatformat:0 }}</h3>
+            <p>Overdue (90+ days)</p>
+            <small class="text-danger">Requires attention</small>
+        </div>
+    </div>
+</div>
+
+<!-- Aging Analysis Chart -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart"></i>
+                    Aging Analysis
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="agingChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aging Analysis Table -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-range"></i>
+                    Aging Analysis Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Age Category</th>
+                                <th>Amount</th>
+                                <th>Percentage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Current (0-30 days)</td>
+                                <td>{{ aging_analysis.current|floatformat:0 }}</td>
+                                <td>{{ current_percentage|floatformat:1 }}%</td>
+                                <td><span class="badge bg-success">Good</span></td>
+                            </tr>
+                            <tr>
+                                <td>31-60 days</td>
+                                <td>৳{{ aging_analysis.30_60|floatformat:0 }}</td>
+                                <td>{{ thirty_sixty_percentage|floatformat:1 }}%</td>
+                                <td><span class="badge bg-warning">Attention</span></td>
+                            </tr>
+                            <tr>
+                                <td>61-90 days</td>
+                                <td>৳{{ aging_analysis.60_90|floatformat:0 }}</td>
+                                <td>{{ sixty_ninety_percentage|floatformat:1 }}%</td>
+                                <td><span class="badge bg-warning">Follow-up</span></td>
+                            </tr>
+                            <tr>
+                                <td>Over 90 days</td>
+                                <td>৳{{ aging_analysis.over_90|floatformat:0 }}</td>
+                                <td>{{ over_ninety_percentage|floatformat:1 }}%</td>
+                                <td><span class="badge bg-danger">Critical</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Receivables Table -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ol"></i>
+                    Customer Receivables Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Customer Type</th>
+                                <th>Total Sales</th>
+                                <th>Outstanding Balance</th>
+                                <th>Last Order Date</th>
+                                <th>Days Since Last Order</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in receivables_data %}
+                            <tr>
+                                <td>{{ data.customer.name }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ data.customer.customer_type|title }}</span>
+                                </td>
+                                <td>৳{{ data.total_sales|floatformat:0 }}</td>
+                                <td>
+                                    <strong class="{% if data.outstanding_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        ৳{{ data.outstanding_balance|floatformat:0 }}
+                                    </strong>
+                                </td>
+                                <td>{{ data.last_payment_date|date:"M d, Y"|default:"N/A" }}</td>
+                                <td>
+                                    {% if data.days_since_last_payment %}
+                                        {{ data.days_since_last_payment }} days
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if data.days_since_last_payment %}
+                                        {% if data.days_since_last_payment <= 30 %}
+                                            <span class="badge bg-success">Current</span>
+                                        {% elif data.days_since_last_payment <= 60 %}
+                                            <span class="badge bg-warning">31-60 days</span>
+                                        {% elif data.days_since_last_payment <= 90 %}
+                                            <span class="badge bg-warning">61-90 days</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Over 90 days</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">No orders</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No receivables data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Aging Analysis Chart
+const agingCtx = document.getElementById('agingChart').getContext('2d');
+new Chart(agingCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Current (0-30 days)', '31-60 days', '61-90 days', 'Over 90 days'],
+        datasets: [{
+            data: [
+                {{ aging_analysis.current }},
+                {{ aging_analysis.30_60 }},
+                {{ aging_analysis.60_90 }},
+                {{ aging_analysis.over_90 }}
+            ],
+            backgroundColor: [
+                '#28a745',
+                '#ffc107',
+                '#fd7e14',
+                '#dc3545'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.label + ': ৳' + context.parsed.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

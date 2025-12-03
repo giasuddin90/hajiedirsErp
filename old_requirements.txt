@@ -1,0 +1,15 @@
+Django
+psycopg2-binary
+python-dotenv
+Pillow
+openpyxl
+reportlab
+requests
+celery
+redis
+django-crispy-forms
+crispy-bootstrap5
+django-extensions
+django-debug-toolbar
+whitenoise
+gunicorn

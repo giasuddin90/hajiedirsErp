@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Orders - Building Materials ERP{% endblock %}
+
+{% block page_title %}Sales Orders{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'sales:order_create' %}" class="btn btn-primary">
+    <i class="bi bi-plus-circle"></i> New Order
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-cart-check"></i>
+                    Sales Orders
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td>
+                                    <strong>{{ order.order_number }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        {% if order.customer %}
+                                            <strong>{{ order.customer.name }}</strong>
+                                            {% if order.customer.company_name %}
+                                            <br><small class="text-muted">{{ order.customer.company_name }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <strong>{{ order.customer_name|default:"Anonymous" }}</strong>
+                                            {% if order.sales_type == 'instant' %}
+                                            <br><small class="text-muted text-info">Instant Sale</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ order.order_date|date:"M d, Y" }}</td>
+                                <td>৳{{ order.total_amount|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge {% if order.status == 'order' %}bg-primary{% elif order.status == 'delivered' %}bg-success{% elif order.status == 'cancel' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'sales:order_detail' order.pk %}" class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if order.sales_type == 'instant' %}
+                                        <a href="{% url 'sales:instant_sales_edit' order.pk %}" class="btn btn-outline-warning" title="Edit Instant Sale">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% else %}
+                                        <a href="{% url 'sales:order_edit' order.pk %}" class="btn btn-outline-warning" title="Edit Order">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{% url 'sales:order_invoice' order.pk %}" class="btn btn-outline-info" title="Download Invoice" target="_blank">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <a href="{% url 'sales:order_delete' order.pk %}" class="btn btn-outline-danger" title="Delete Order">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-cart-check fs-1 text-muted"></i>
+                    <h5 class="text-muted mt-3">No sales orders found</h5>
+                    <p class="text-muted">Start by creating your first sales order.</p>
+                    <a href="{% url 'sales:order_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> New Order
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

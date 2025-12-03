@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Expense List - BuildERP{% endblock %}
+
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-list-ul"></i> All Expenses</h1>
+            <p class="text-muted mb-0">Manage and track all business expenses</p>
+        </div>
+        <div>
+            <a href="{% url 'expenses:expense_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Expense
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<!-- Filter & Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3 col-lg-2">
+                <label for="id_date_preset" class="form-label">Date</label>
+                {{ filter_form.date_preset }}
+            </div>
+            <div class="col-md-3 col-lg-2">
+                <label for="id_start_date" class="form-label">Start</label>
+                {{ filter_form.start_date }}
+            </div>
+            <div class="col-md-3 col-lg-2">
+                <label for="id_end_date" class="form-label">End</label>
+                {{ filter_form.end_date }}
+            </div>
+            <div class="col-md-3 col-lg-2">
+                <label for="id_category" class="form-label">Category</label>
+                {{ filter_form.category }}
+            </div>
+            <div class="col-md-3 col-lg-2">
+                {{ filter_form.status }}
+            </div>
+            <div class="col-md-3 col-lg-2">
+                {{ filter_form.payment_method }}
+            </div>
+            <div class="col-md-3 col-lg-2">
+                {{ filter_form.min_amount }}
+            </div>
+            <div class="col-md-3 col-lg-2">
+                {{ filter_form.max_amount }}
+            </div>
+            <div class="col-lg-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        Apply
+                    </button>
+                    <a href="{% url 'expenses:expense_list' %}" class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Expenses Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-table"></i> Expenses List
+            <span class="badge bg-primary ms-2">{{ expenses|length }} Total</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Payment Method</th>
+                        <th>Vendor</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td>
+                            <div>
+                                <a href="{% url 'expenses:expense_detail' expense.pk %}" class="text-decoration-none fw-medium">
+                                    {{ expense.title }}
+                                </a>
+                            </div>
+                            {% if expense.description %}
+                                <small class="text-muted">{{ expense.description|truncatechars:50 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if expense.category %}
+                                <span class="badge bg-secondary">{{ expense.category.name }}</span>
+                            {% else %}
+                                <span class="text-muted">No Category</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-medium">৳{{ expense.amount|floatformat:0 }}</td>
+                        <td>{{ expense.expense_date }}</td>
+                        <td>
+                            {% if expense.status == 'unpaid' %}
+                                <span class="badge bg-warning">{{ expense.status|title }}</span>
+                            {% elif expense.status == 'paid' %}
+                                <span class="badge bg-success">{{ expense.status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ expense.get_payment_method_display }}</span>
+                        </td>
+                        <td>
+                            {% if expense.vendor_name %}
+                                {{ expense.vendor_name|truncatechars:20 }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'expenses:expense_detail' expense.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'expenses:expense_edit' expense.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'expenses:expense_delete' expense.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                            No expenses found. <a href="{% url 'expenses:expense_create' %}">Add your first expense</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Expenses pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.payment_method %}&payment_method={{ request.GET.payment_method }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.payment_method %}&payment_method={{ request.GET.payment_method }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">Previous</a>
+                    </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.payment_method %}&payment_method={{ request.GET.payment_method }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.payment_method %}&payment_method={{ request.GET.payment_method }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.min_amount %}&min_amount={{ request.GET.min_amount }}{% endif %}{% if request.GET.max_amount %}&max_amount={{ request.GET.max_amount }}{% endif %}">Last</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
