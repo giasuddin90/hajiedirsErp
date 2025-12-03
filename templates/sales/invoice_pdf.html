@@ -335,15 +335,24 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in items %}
+                    {% for item_data in items_with_tile_info %}
                     <tr>
                         <td>
-                            <div class="product-name">{{ item.product.name }}</div>
-                            <div class="product-unit">{{ item.product.unit_type }}</div>
+                            <div class="product-name">
+                                {{ item_data.item.product.name }}
+                                {% if item_data.tile_info %}
+                                    - {{ item_data.tile_info.total_sqft|floatformat:0 }} sqft
+                                    ({{ item_data.tile_info.cartons }} carton
+                                    {% if item_data.tile_info.pieces > 0 %}
+                                        {{ item_data.tile_info.pieces }} pieces
+                                    {% endif %})
+                                {% endif %}
+                            </div>
+                            <div class="product-unit">{{ item_data.item.product.unit_type }}</div>
                         </td>
-                        <td class="number-cell">{{ item.quantity|floatformat:0 }}</td>
-                        <td class="number-cell">৳{{ item.unit_price|floatformat:2 }}</td>
-                        <td class="number-cell">৳{{ item.total_price|floatformat:2 }}</td>
+                        <td class="number-cell">{{ item_data.item.quantity|floatformat:0 }}</td>
+                        <td class="number-cell">৳{{ item_data.item.unit_price|floatformat:2 }}</td>
+                        <td class="number-cell">৳{{ item_data.item.total_price|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

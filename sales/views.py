@@ -306,6 +306,8 @@ def sales_order_invoice(request, order_id):
         # Calculate delivery charges per item and total
         delivery_charges = Decimal('0')
         items_with_delivery = []
+        items_with_tile_info = []
+        
         for item in order.items.all():
             delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
             item_delivery_charge = item.quantity * delivery_charge_per_unit
@@ -314,6 +316,40 @@ def sales_order_invoice(request, order_id):
                 'item': item,
                 'delivery_charge_per_unit': delivery_charge_per_unit,
                 'delivery_charge_total': item_delivery_charge,
+            })
+            
+            # Calculate tile information if category is "Tiles"
+            tile_info = None
+            if item.product.category and item.product.category.name.lower() == 'tiles':
+                pcs_per_carton = item.product.pcs_per_carton or 0
+                sqft_per_pcs = item.product.sqft_per_pcs or Decimal('0')
+                
+                if sqft_per_pcs > 0 and pcs_per_carton > 0:
+                    # Check if quantity is in sqft or pieces based on unit type
+                    unit_code = item.product.unit_type.code.lower() if item.product.unit_type else ''
+                    
+                    if unit_code == 'sqft':
+                        # Quantity is in sqft
+                        total_sqft = item.quantity
+                        total_pieces = total_sqft / sqft_per_pcs
+                    else:
+                        # Quantity is in pieces, calculate sqft
+                        total_pieces = item.quantity
+                        total_sqft = total_pieces * sqft_per_pcs
+                    
+                    # Calculate cartons and remaining pieces
+                    cartons = int(total_pieces // pcs_per_carton)
+                    remaining_pieces = int(total_pieces % pcs_per_carton)
+                    
+                    tile_info = {
+                        'total_sqft': total_sqft,
+                        'cartons': cartons,
+                        'pieces': remaining_pieces,
+                    }
+            
+            items_with_tile_info.append({
+                'item': item,
+                'tile_info': tile_info,
             })
         
         # Get transportation cost
@@ -326,6 +362,7 @@ def sales_order_invoice(request, order_id):
         context = {
             'order': order,
             'items': order.items.all(),
+            'items_with_tile_info': items_with_tile_info,
             'items_with_delivery': items_with_delivery,
             'subtotal': subtotal,
             'delivery_charges': delivery_charges,
