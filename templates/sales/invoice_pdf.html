@@ -353,9 +353,21 @@
             <div class="total-section">
                 <div class="total-box">
                     <div class="total-row">
-                        <span>Subtotal:</span>
-                        <span>৳{{ order.total_amount|floatformat:2 }}</span>
+                        <span>Subtotal (Products):</span>
+                        <span>৳{{ subtotal|floatformat:2 }}</span>
                     </div>
+                    {% if delivery_charges > 0 %}
+                    <div class="total-row">
+                        <span>Delivery Charges:</span>
+                        <span>৳{{ delivery_charges|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    {% if transportation_cost > 0 %}
+                    <div class="total-row">
+                        <span>Transportation Cost:</span>
+                        <span>৳{{ transportation_cost|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
                     {% if order.labor_charges and order.labor_charges > 0 %}
                     <div class="total-row">
                         <span>Labor Charges:</span>

@@ -300,6 +300,25 @@ def sales_order_invoice(request, order_id):
     try:
         order = get_object_or_404(SalesOrder, id=order_id)
         
+        # Calculate subtotal (products only)
+        subtotal = sum(item.total_price for item in order.items.all())
+        
+        # Calculate delivery charges per item and total
+        delivery_charges = Decimal('0')
+        items_with_delivery = []
+        for item in order.items.all():
+            delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+            item_delivery_charge = item.quantity * delivery_charge_per_unit
+            delivery_charges += item_delivery_charge
+            items_with_delivery.append({
+                'item': item,
+                'delivery_charge_per_unit': delivery_charge_per_unit,
+                'delivery_charge_total': item_delivery_charge,
+            })
+        
+        # Get transportation cost
+        transportation_cost = order.transportation_cost or Decimal('0')
+        
         # Get template
         template = get_template('sales/invoice_pdf.html')
         
@@ -307,6 +326,10 @@ def sales_order_invoice(request, order_id):
         context = {
             'order': order,
             'items': order.items.all(),
+            'items_with_delivery': items_with_delivery,
+            'subtotal': subtotal,
+            'delivery_charges': delivery_charges,
+            'transportation_cost': transportation_cost,
             'company_name': 'Sun Electric',
             'company_address': '123 Business Street, City, Country',
             'company_phone': '+1 234 567 8900',
