@@ -41,17 +41,7 @@
                     <small class="brand-subtitle">ERP System</small>
                 </div>
             </div>
-            {% if user.is_authenticated %}
-                <div class="user-info">
-                    <div class="user-avatar">
-                        <i class="bi bi-person-circle"></i>
-                    </div>
-                    <div class="user-details">
-                        <div class="user-name">{{ user.username }}</div>
-                        <div class="user-role">Administrator</div>
-                    </div>
-                </div>
-            {% endif %}
+
         </div>
         <ul class="nav flex-column">
             <!-- Dashboard -->
@@ -276,6 +266,17 @@
                 </a>
             </li>
         </ul>
+         {% if user.is_authenticated %}
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ user.username }}</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                </div>
+            {% endif %}
     </nav>
 
     <!-- Main Content -->

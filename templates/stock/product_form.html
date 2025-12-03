@@ -186,6 +186,57 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Delivery Charge -->
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.delivery_charge_per_unit.id_for_label }}" class="form-label">
+                                            {{ form.delivery_charge_per_unit.label }}
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">৳</span>
+                                            {{ form.delivery_charge_per_unit }}
+                                        </div>
+                                        {% if form.delivery_charge_per_unit.errors %}
+                                            <div class="text-danger small">
+                                                {% for error in form.delivery_charge_per_unit.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Pieces per Carton and Square Feet per Piece fields -->
+                                <div class="row" id="tile-fields">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.pcs_per_carton.id_for_label }}" class="form-label">
+                                            {{ form.pcs_per_carton.label }}
+                                        </label>
+                                        {{ form.pcs_per_carton }}
+                                        {% if form.pcs_per_carton.errors %}
+                                            <div class="text-danger small">
+                                                {% for error in form.pcs_per_carton.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.sqft_per_pcs.id_for_label }}" class="form-label">
+                                            {{ form.sqft_per_pcs.label }}
+                                        </label>
+                                        {{ form.sqft_per_pcs }}
+                                        {% if form.sqft_per_pcs.errors %}
+                                            <div class="text-danger small">
+                                                {% for error in form.sqft_per_pcs.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
                                 <!-- Active Status -->
                                 <div class="mb-3">
                                     <div class="form-check">
@@ -228,11 +279,36 @@
 
 {% block extra_js %}
 <script>
-    // Auto-calculate profit margin
     document.addEventListener('DOMContentLoaded', function() {
         const costPriceField = document.getElementById('{{ form.cost_price.id_for_label }}');
         const sellingPriceField = document.getElementById('{{ form.selling_price.id_for_label }}');
+        const categoryField = document.getElementById('id_category');
+        const tileFieldsRow = document.getElementById('tile-fields');
         
+        // Function to toggle tile fields based on category
+        function toggleTileFields() {
+            if (categoryField && tileFieldsRow) {
+                const selectedIndex = categoryField.selectedIndex;
+                const selectedOption = categoryField.options[selectedIndex];
+                
+                // Show fields if no category selected OR if category is "Tiles"
+                if (!selectedOption || !selectedOption.value || selectedOption.value === '') {
+                    // No category selected - show fields
+                    tileFieldsRow.style.display = 'flex';
+                } else {
+                    const categoryName = selectedOption.text.trim().toLowerCase();
+                    // Show fields if category is "Tiles"
+                    if (categoryName === 'tiles') {
+                        tileFieldsRow.style.display = 'flex';
+                    } else {
+                        // Hide for other categories
+                        tileFieldsRow.style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        // Auto-calculate profit margin
         function calculateMargin() {
             const costPrice = parseFloat(costPriceField.value) || 0;
             const sellingPrice = parseFloat(sellingPriceField.value) || 0;
@@ -243,6 +319,15 @@
             }
         }
         
+        // Initialize fields visibility on page load
+        toggleTileFields();
+        
+        // Listen for category changes
+        if (categoryField) {
+            categoryField.addEventListener('change', toggleTileFields);
+        }
+        
+        // Listen for price changes
         if (costPriceField && sellingPriceField) {
             costPriceField.addEventListener('input', calculateMargin);
             sellingPriceField.addEventListener('input', calculateMargin);

@@ -122,7 +122,9 @@ class ProductForm(forms.ModelForm):
         model = Product
         fields = [
             'name', 'category', 'brand', 'unit_type', 'description',
-            'cost_price', 'selling_price', 'min_stock_level', 'is_active'
+            'cost_price', 'selling_price', 'min_stock_level', 
+            'delivery_charge_per_unit', 'pcs_per_carton', 'sqft_per_pcs',
+            'is_active'
         ]
         widgets = {
             'name': forms.TextInput(attrs={
@@ -130,7 +132,8 @@ class ProductForm(forms.ModelForm):
                 'placeholder': 'Enter product name'
             }),
             'category': forms.Select(attrs={
-                'class': 'form-select'
+                'class': 'form-select',
+                'id': 'id_category'
             }),
             'brand': forms.Select(attrs={
                 'class': 'form-select'
@@ -161,6 +164,26 @@ class ProductForm(forms.ModelForm):
                 'min': '0',
                 'placeholder': '0.00'
             }),
+            'delivery_charge_per_unit': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'pcs_per_carton': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '1',
+                'min': '0',
+                'placeholder': '0',
+                'id': 'id_pcs_per_carton'
+            }),
+            'sqft_per_pcs': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00',
+                'id': 'id_sqft_per_pcs'
+            }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             })
@@ -174,6 +197,9 @@ class ProductForm(forms.ModelForm):
             'cost_price': 'Cost Price',
             'selling_price': 'Selling Price',
             'min_stock_level': 'Minimum Stock Level',
+            'delivery_charge_per_unit': 'Delivery Charge per Unit',
+            'pcs_per_carton': 'Pieces per Carton',
+            'sqft_per_pcs': 'Square Feet per Piece',
             'is_active': 'Active'
         }
     
@@ -191,6 +217,12 @@ class ProductForm(forms.ModelForm):
         self.fields['category'].empty_label = "Select Category (Optional)"
         self.fields['brand'].empty_label = "Select Brand (Optional)"
         self.fields['unit_type'].empty_label = "Select Unit Type"
+        
+        # Set default values for new fields
+        if not self.instance.pk:
+            self.fields['delivery_charge_per_unit'].initial = 0
+            self.fields['pcs_per_carton'].initial = 0
+            self.fields['sqft_per_pcs'].initial = 0
     
     def clean_selling_price(self):
         """Validate selling price"""
