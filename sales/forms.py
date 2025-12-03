@@ -25,7 +25,7 @@ class SalesOrderForm(forms.ModelForm):
     
     class Meta:
         model = SalesOrder
-        fields = ['sales_type', 'customer', 'customer_name', 'order_date', 'delivery_date', 'status', 'notes']
+        fields = ['sales_type', 'customer', 'customer_name', 'order_date', 'delivery_date', 'status', 'transportation_cost', 'notes']
         widgets = {
             'sales_type': forms.Select(attrs={'class': 'form-select'}),
             'order_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -33,6 +33,7 @@ class SalesOrderForm(forms.ModelForm):
             'customer': forms.Select(attrs={'class': 'form-select'}),
             'customer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter customer name for instant sales'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'transportation_cost': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0.00', 'id': 'id_transportation_cost'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
         labels = {
@@ -42,6 +43,7 @@ class SalesOrderForm(forms.ModelForm):
             'order_date': 'Order Date',
             'delivery_date': 'Delivery Date',
             'status': 'Status',
+            'transportation_cost': 'Transportation Cost',
             'notes': 'Notes',
         }
 
@@ -59,9 +61,10 @@ class SalesOrderForm(forms.ModelForm):
             'onchange': 'toggleCustomerFields()'
         })
         
-        # Set default status
+        # Set default status and sales_type
         if not self.instance.pk:
             self.fields['status'].initial = 'order'
+            self.fields['sales_type'].initial = 'regular'
     
     def clean(self):
         cleaned_data = super().clean()
@@ -187,8 +190,23 @@ class SalesOrderItemForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        
+        # If product is not selected, skip validation (empty form)
+        product = cleaned_data.get('product')
+        if not product:
+            # Empty form - don't validate, just return
+            # Django formset will ignore empty forms
+            return cleaned_data
+        
         quantity = cleaned_data.get('quantity', 0)
         unit_price = cleaned_data.get('unit_price', 0)
+        
+        # Validate quantity and price if product is selected
+        if product:
+            if not quantity or quantity <= 0:
+                raise forms.ValidationError('Quantity must be greater than 0 when product is selected.')
+            if not unit_price or unit_price <= 0:
+                raise forms.ValidationError('Unit price must be greater than 0 when product is selected.')
         
         # Calculate total price and round to 2 decimal places
         if quantity and unit_price:
@@ -209,11 +227,19 @@ class SalesOrderItemForm(forms.ModelForm):
         return instance
 
 
+# Override formset to handle empty forms
+class BaseSalesOrderItemFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        """Allow empty forms - they will be ignored"""
+        # Don't validate empty forms
+        return super().clean()
+
 # Inline formset for sales order items
 SalesOrderItemFormSet = inlineformset_factory(
     SalesOrder,
     SalesOrderItem,
     form=SalesOrderItemForm,
+    formset=BaseSalesOrderItemFormSet,
     fields=['product', 'quantity', 'unit_price', 'total_price'],
     extra=0,  # No extra forms by default
     can_delete=True,

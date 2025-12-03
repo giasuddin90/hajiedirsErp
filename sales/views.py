@@ -6,6 +6,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.conf import settings
+from decimal import Decimal
 import os
 from .models import (
     SalesOrder, SalesOrderItem
@@ -61,13 +62,27 @@ class SalesOrderCreateView(CreateView):
                 # Save the order first
                 response = super().form_valid(form)
                 
-                # Handle formset
+                # Handle formset - now we have self.object
                 formset = SalesOrderItemFormSetCustom(self.request.POST, instance=self.object)
+                
+                # Validate formset
                 if formset.is_valid():
                     formset.save()
                     
-                    # Calculate total amount
-                    total_amount = sum(item.total_price for item in self.object.items.all())
+                    # Calculate total amount (subtotal + delivery charges + transportation cost)
+                    subtotal = sum(item.total_price for item in self.object.items.all())
+                    
+                    # Calculate delivery charges
+                    delivery_charges = Decimal('0')
+                    for item in self.object.items.all():
+                        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+                        delivery_charges += item.quantity * delivery_charge_per_unit
+                    
+                    # Get transportation cost
+                    transportation_cost = self.object.transportation_cost or Decimal('0')
+                    
+                    # Total amount
+                    total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
                     self.object.save()
                     
@@ -77,14 +92,64 @@ class SalesOrderCreateView(CreateView):
                     else:
                         messages.warning(self.request, f"Sales order {order_number} created without items. Please add products to complete the order.")
                 else:
-                    messages.error(self.request, "Please fix the errors in the product selection.")
+                    # Show detailed formset errors
+                    error_messages = []
+                    for idx, form_item in enumerate(formset.forms):
+                        if form_item.errors:
+                            for field, errors in form_item.errors.items():
+                                for error in errors:
+                                    error_messages.append(f"Product {idx + 1} - {field}: {error}")
+                    
+                    if formset.non_form_errors():
+                        for error in formset.non_form_errors():
+                            error_messages.append(str(error))
+                    
+                    if error_messages:
+                        messages.error(self.request, "Please fix the following errors:\n" + "\n".join(error_messages))
+                    else:
+                        messages.error(self.request, "Please add at least one product to the order.")
+                    
+                    # Return form_invalid to show errors
                     return self.form_invalid(form)
                 
                 return response
                 
         except Exception as e:
-            messages.error(self.request, f"Error creating sales order: {str(e)}")
+            import traceback
+            error_details = traceback.format_exc()
+            error_msg = f"Error creating sales order: {str(e)}"
+            messages.error(self.request, error_msg)
+            # Log the full error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Sales order creation error: {error_details}")
+            print(f"ERROR: {error_details}")  # Also print for immediate debugging
             return self.form_invalid(form)
+    
+    def form_invalid(self, form):
+        """Handle invalid form submission with better error display"""
+        # Re-create formset with errors
+        # For new orders, object might not exist yet
+        instance = None
+        if hasattr(self, 'object') and self.object:
+            instance = self.object
+        
+        if self.request.POST:
+            formset = SalesOrderItemFormSetCustom(self.request.POST, instance=instance)
+        else:
+            formset = SalesOrderItemFormSetCustom(instance=instance)
+        
+        # Add formset to context
+        context = self.get_context_data(form=form)
+        context['formset'] = formset
+        
+        # Print errors for debugging
+        print(f"DEBUG: Form errors: {form.errors}")
+        print(f"DEBUG: Formset errors: {formset.errors}")
+        if formset.non_form_errors():
+            print(f"DEBUG: Formset non-form errors: {formset.non_form_errors()}")
+        
+        return self.render_to_response(context)
 
 
 class SalesOrderUpdateView(UpdateView):
@@ -121,8 +186,20 @@ class SalesOrderUpdateView(UpdateView):
                 if formset.is_valid():
                     formset.save()
                     
-                    # Calculate total amount
-                    total_amount = sum(item.total_price for item in self.object.items.all())
+                    # Calculate total amount (subtotal + delivery charges + transportation cost)
+                    subtotal = sum(item.total_price for item in self.object.items.all())
+                    
+                    # Calculate delivery charges
+                    delivery_charges = Decimal('0')
+                    for item in self.object.items.all():
+                        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+                        delivery_charges += item.quantity * delivery_charge_per_unit
+                    
+                    # Get transportation cost
+                    transportation_cost = self.object.transportation_cost or Decimal('0')
+                    
+                    # Total amount
+                    total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
                     self.object.save()
                     
@@ -296,8 +373,20 @@ class InstantSalesCreateView(CreateView):
                     formset.save()
                     print(f"DEBUG: Formset saved successfully")
                     
-                    # Calculate total amount
-                    total_amount = sum(item.total_price for item in self.object.items.all())
+                    # Calculate total amount (subtotal + delivery charges + transportation cost)
+                    subtotal = sum(item.total_price for item in self.object.items.all())
+                    
+                    # Calculate delivery charges
+                    delivery_charges = Decimal('0')
+                    for item in self.object.items.all():
+                        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+                        delivery_charges += item.quantity * delivery_charge_per_unit
+                    
+                    # Get transportation cost
+                    transportation_cost = self.object.transportation_cost or Decimal('0')
+                    
+                    # Total amount
+                    total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
                     self.object.save()
                     print(f"DEBUG: Total amount set to: {total_amount}")
@@ -375,8 +464,20 @@ class InstantSalesUpdateView(UpdateView):
                 if formset.is_valid():
                     formset.save()
                     
-                    # Calculate total amount
-                    total_amount = sum(item.total_price for item in self.object.items.all())
+                    # Calculate total amount (subtotal + delivery charges + transportation cost)
+                    subtotal = sum(item.total_price for item in self.object.items.all())
+                    
+                    # Calculate delivery charges
+                    delivery_charges = Decimal('0')
+                    for item in self.object.items.all():
+                        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+                        delivery_charges += item.quantity * delivery_charge_per_unit
+                    
+                    # Get transportation cost
+                    transportation_cost = self.object.transportation_cost or Decimal('0')
+                    
+                    # Total amount
+                    total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
                     self.object.save()
                     

@@ -12,7 +12,7 @@ from datetime import date, timedelta
 
 from sales.models import SalesOrder, SalesOrderItem
 from customers.models import Customer
-from stock.models import Product, ProductCategory, ProductBrand, Stock
+from stock.models import Product, ProductCategory, ProductBrand
 from suppliers.models import Supplier
 
 
@@ -668,20 +668,12 @@ class SalesIntegrationTests(TestCase):
         
         # For instant sales, stock should be reduced when the order is created
         # (This would happen in the actual view when creating instant sales)
-        # For this test, we'll simulate the stock reduction
-        from stock.models import Stock
-        Stock.update_stock(
-            product=self.product,
-            quantity_change=Decimal('1.00'),
-            unit_cost=Decimal('100.00'),
-            movement_type='outward',
-            reference=f"IS-{order.order_number}",
-            description=f"Instant sale - Anonymous Customer",
-            user=self.user
-        )
+        # Stock model removed - inventory calculated in real-time
+        # Inventory decreases automatically when order status = 'delivered'
+        # No need to manually update stock
         
-        # Check stock was reduced
-        stock = Stock.objects.get(product=self.product)
+        # Check stock using real-time calculation
+        current_stock = self.product.get_realtime_quantity()
         self.assertEqual(stock.quantity, Decimal('99.00'))  # 100 - 1
     
     def test_cancel_delivered_order_workflow(self):

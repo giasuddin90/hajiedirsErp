@@ -15,8 +15,46 @@
                 </h5>
             </div>
             <div class="card-body">
+                <!-- Display Messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <!-- Display Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <h6><i class="bi bi-exclamation-triangle"></i> Form Errors:</h6>
+                        <ul class="mb-0">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                <!-- Display Formset Errors -->
+                {% if formset.non_form_errors %}
+                    <div class="alert alert-danger">
+                        <h6><i class="bi bi-exclamation-triangle"></i> Product Errors:</h6>
+                        <ul class="mb-0">
+                            {% for error in formset.non_form_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
                 <form method="post" id="sales-order-form">
                     {% csrf_token %}
+                    
+                    <!-- Hidden fields -->
+                    {{ form.sales_type }}
                     
                     <!-- Main Form Fields -->
                     <div class="row">
@@ -87,8 +125,24 @@
                         <div id="products-container">
                             {% if formset.forms %}
                                 {% for form in formset %}
-                                <div class="product-row row mb-3 p-3 border rounded formset-form" data-form-index="{{ forloop.counter0 }}">
+                                <div class="product-row row mb-3 p-3 border rounded formset-form {% if form.errors %}border-danger{% endif %}" data-form-index="{{ forloop.counter0 }}">
                                     {{ form.id }}
+                                    
+                                    <!-- Display form errors for this product -->
+                                    {% if form.errors %}
+                                        <div class="col-12 mb-2">
+                                            <div class="alert alert-danger alert-sm py-2">
+                                                <strong>Product {{ forloop.counter }} Errors:</strong>
+                                                <ul class="mb-0 small">
+                                                    {% for field, errors in form.errors.items %}
+                                                        {% for error in errors %}
+                                                            <li>{{ field|title }}: {{ error }}</li>
+                                                        {% endfor %}
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    {% endif %}
                                     
                                     <!-- Category Selection -->
                                     <div class="col-md-3">
@@ -199,10 +253,68 @@
                         {% endif %}
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
+                    <!-- Cost Breakdown Section -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6 class="mb-3">
+                                <i class="bi bi-calculator"></i>
+                                Cost Breakdown
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_subtotal" class="form-label">Subtotal (Products)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">৳</span>
+                                <input type="number" class="form-control" id="id_subtotal" value="0.00" step="0.01" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_total_delivery_charge" class="form-label">Total Delivery Charge</label>
+                            <div class="input-group">
+                                <span class="input-group-text">৳</span>
+                                <input type="number" class="form-control" id="id_total_delivery_charge" value="0.00" step="0.01" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.transportation_cost.id_for_label }}" class="form-label">
+                                {{ form.transportation_cost.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">৳</span>
+                                {{ form.transportation_cost }}
+                            </div>
+                            {% if form.transportation_cost.errors %}
+                                <div class="invalid-feedback d-block">{{ form.transportation_cost.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
                             <label for="id_total_amount" class="form-label">Total Amount</label>
-                            <input type="number" class="form-control" id="id_total_amount" name="total_amount" value="{{ object.total_amount|default:0 }}" step="0.01" readonly>
+                            <div class="input-group">
+                                <span class="input-group-text">৳</span>
+                                <input type="number" class="form-control" id="id_total_amount" name="total_amount" value="{{ object.total_amount|default:0 }}" step="0.01" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Charge Breakdown -->
+                    <div class="row mb-3" id="delivery-breakdown-container" style="display: none;">
+                        <div class="col-md-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="bi bi-list-ul"></i> Delivery Charge Breakdown
+                                    </h6>
+                                    <div id="delivery-breakdown-list">
+                                        <!-- Delivery charge breakdown will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
         
@@ -324,7 +436,8 @@ const productData = {
         brand: {{ product.brand.id|default:"null" }},
         name: "{{ product.name|escapejs }}",
         unit: "{{ product.unit_type }}",
-        price: {{ product.selling_price|default:"0" }}
+        price: {{ product.selling_price|default:"0" }},
+        delivery_charge: {{ product.delivery_charge_per_unit|default:"0" }}
     }{% if not forloop.last %},{% endif %}
     {% endfor %}
 };
@@ -427,6 +540,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    
+    // Transportation cost change
+    const transportationCostInput = document.getElementById('id_transportation_cost');
+    if (transportationCostInput) {
+        transportationCostInput.addEventListener('input', function() {
+            updateTotalAmount();
+        });
+        transportationCostInput.addEventListener('change', function() {
+            updateTotalAmount();
+        });
+    }
     
     // Product selection change
     document.addEventListener('change', function(e) {
@@ -564,12 +688,88 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Form submission validation
-    document.getElementById('sales-order-form').addEventListener('submit', function(e) {
-        if (!validateForm()) {
-            e.preventDefault();
-            showValidationErrors();
-        }
-    });
+    const salesOrderForm = document.getElementById('sales-order-form');
+    if (salesOrderForm) {
+        salesOrderForm.addEventListener('submit', function(e) {
+            console.log('Form submission started...');
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+                
+                // Re-enable after 5 seconds in case of error
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }, 5000);
+            }
+            
+            // Remove empty product rows before submission
+            const productRows = document.querySelectorAll('.product-row');
+            let hasValidProduct = false;
+            let emptyRowsRemoved = 0;
+            
+            console.log(`Found ${productRows.length} product rows`);
+            
+            productRows.forEach((row, index) => {
+                const productSelect = row.querySelector('select[name$="-product"]');
+                const quantityInput = row.querySelector('input[name$="-quantity"]');
+                const priceInput = row.querySelector('input[name$="-unit_price"]');
+                
+                if (productSelect && quantityInput && priceInput) {
+                    const product = productSelect.value;
+                    const quantity = quantityInput.value;
+                    const price = priceInput.value;
+                    
+                    console.log(`Row ${index}: product=${product}, quantity=${quantity}, price=${price}`);
+                    
+                    // If row is completely empty, mark it for deletion
+                    if (!product && !quantity && !price) {
+                        console.log(`Row ${index} is empty, marking for deletion`);
+                        // Mark the DELETE checkbox if it exists
+                        const deleteInput = row.querySelector('input[name$="-DELETE"]');
+                        if (deleteInput) {
+                            deleteInput.checked = true;
+                        } else {
+                            // If no DELETE input, remove the row entirely
+                            row.remove();
+                            emptyRowsRemoved++;
+                        }
+                    } else if (product && quantity && price) {
+                        const qty = parseFloat(quantity);
+                        const prc = parseFloat(price);
+                        if (qty > 0 && prc > 0) {
+                            hasValidProduct = true;
+                            console.log(`Row ${index} is valid`);
+                        } else {
+                            console.log(`Row ${index} has invalid quantity or price`);
+                        }
+                    } else {
+                        console.log(`Row ${index} is partially filled`);
+                    }
+                }
+            });
+            
+            console.log(`Valid products: ${hasValidProduct}, Empty rows removed: ${emptyRowsRemoved}`);
+            
+            // Update formset management after cleanup
+            updateFormsetManagement();
+            updateTotalAmount();
+            
+            // Log form data for debugging
+            const formData = new FormData(salesOrderForm);
+            console.log('Form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            
+            // Note: We don't prevent submission here - let Django handle validation
+            // This just cleans up empty forms to avoid formset validation errors
+        });
+    }
     
     function initializeExistingProducts() {
         // Initialize existing product rows
@@ -582,11 +782,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateFormsetManagement() {
-        // Update the TOTAL_FORMS field in the formset management form
-        const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+        // Find the formset management form - it could be named 'form-TOTAL_FORMS' or 'items-TOTAL_FORMS'
+        const totalFormsInput = document.querySelector('input[name*="-TOTAL_FORMS"]') || 
+                               document.querySelector('input[id*="TOTAL_FORMS"]');
+        const initialFormsInput = document.querySelector('input[name*="-INITIAL_FORMS"]') || 
+                                  document.querySelector('input[id*="INITIAL_FORMS"]');
+        
         if (totalFormsInput) {
             const productRows = document.querySelectorAll('.product-row');
-            totalFormsInput.value = productRows.length;
+            const formCount = productRows.length;
+            totalFormsInput.value = formCount;
+            
+            // Also update form indices for all rows
+            productRows.forEach((row, index) => {
+                row.setAttribute('data-form-index', index);
+                
+                // Update all input/select names to use the correct index
+                row.querySelectorAll('select, input').forEach(input => {
+                    if (input.name && input.name.includes('-')) {
+                        const nameParts = input.name.split('-');
+                        if (nameParts.length >= 3 && !isNaN(parseInt(nameParts[1]))) {
+                            nameParts[1] = index;
+                            input.name = nameParts.join('-');
+                            input.id = `id_${nameParts.join('-')}`;
+                        }
+                    }
+                });
+            });
+            
+            console.log(`Updated formset management: TOTAL_FORMS = ${formCount}`);
+        } else {
+            console.error('Could not find formset management form TOTAL_FORMS input');
         }
     }
     
@@ -710,6 +936,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update the formset management form
         updateFormsetManagement();
         
+        // Re-validate form after adding row
+        validateForm();
+        
         // Focus on the new category select
         newRow.querySelector('.category-select').focus();
     }
@@ -824,14 +1053,100 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateTotalAmount() {
-        let total = 0;
-        document.querySelectorAll('input[name$="-total_price"]').forEach(input => {
-            total += parseFloat(input.value) || 0;
+        let subtotal = 0;
+        let totalDeliveryCharge = 0;
+        const deliveryBreakdown = [];
+        
+        // Calculate subtotal and delivery charges for each product
+        document.querySelectorAll('.product-row').forEach(row => {
+            const productSelect = row.querySelector('select[name$="-product"]');
+            const quantityInput = row.querySelector('input[name$="-quantity"]');
+            const totalPriceInput = row.querySelector('input[name$="-total_price"]');
+            
+            if (productSelect && productSelect.value && quantityInput && totalPriceInput) {
+                const productId = productSelect.value;
+                const product = productData[productId];
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const rowTotal = parseFloat(totalPriceInput.value) || 0;
+                
+                if (product) {
+                    subtotal += rowTotal;
+                    
+                    // Calculate delivery charge for this product
+                    const deliveryChargePerUnit = parseFloat(product.delivery_charge) || 0;
+                    const rowDeliveryCharge = quantity * deliveryChargePerUnit;
+                    totalDeliveryCharge += rowDeliveryCharge;
+                    
+                    // Add to breakdown if delivery charge > 0
+                    if (rowDeliveryCharge > 0) {
+                        deliveryBreakdown.push({
+                            product: product.name,
+                            quantity: quantity,
+                            deliveryChargePerUnit: deliveryChargePerUnit,
+                            total: rowDeliveryCharge
+                        });
+                    }
+                }
+            }
         });
         
+        // Get transportation cost
+        const transportationCostInput = document.getElementById('id_transportation_cost');
+        const transportationCost = parseFloat(transportationCostInput?.value) || 0;
+        
+        // Calculate total amount
+        const total = subtotal + totalDeliveryCharge + transportationCost;
+        
         // Round to 2 decimal places
-        total = Math.round(total * 100) / 100;
-        document.getElementById('id_total_amount').value = total.toFixed(2);
+        subtotal = Math.round(subtotal * 100) / 100;
+        totalDeliveryCharge = Math.round(totalDeliveryCharge * 100) / 100;
+        const finalTotal = Math.round(total * 100) / 100;
+        
+        // Update display fields
+        const subtotalInput = document.getElementById('id_subtotal');
+        const deliveryChargeInput = document.getElementById('id_total_delivery_charge');
+        const totalAmountInput = document.getElementById('id_total_amount');
+        
+        if (subtotalInput) subtotalInput.value = subtotal.toFixed(2);
+        if (deliveryChargeInput) deliveryChargeInput.value = totalDeliveryCharge.toFixed(2);
+        if (totalAmountInput) totalAmountInput.value = finalTotal.toFixed(2);
+        
+        // Update delivery breakdown display
+        updateDeliveryBreakdown(deliveryBreakdown, totalDeliveryCharge);
+    }
+    
+    function updateDeliveryBreakdown(breakdown, totalDeliveryCharge) {
+        const container = document.getElementById('delivery-breakdown-container');
+        const list = document.getElementById('delivery-breakdown-list');
+        
+        if (!container || !list) return;
+        
+        if (breakdown.length > 0 && totalDeliveryCharge > 0) {
+            let html = '<table class="table table-sm table-borderless mb-0">';
+            html += '<thead><tr><th>Product</th><th class="text-end">Qty</th><th class="text-end">Charge/Unit</th><th class="text-end">Total</th></tr></thead>';
+            html += '<tbody>';
+            
+            breakdown.forEach(item => {
+                html += `<tr>
+                    <td>${item.product}</td>
+                    <td class="text-end">${item.quantity.toFixed(2)}</td>
+                    <td class="text-end">৳${item.deliveryChargePerUnit.toFixed(2)}</td>
+                    <td class="text-end">৳${item.total.toFixed(2)}</td>
+                </tr>`;
+            });
+            
+            html += `<tr class="table-secondary fw-bold">
+                <td colspan="3" class="text-end">Total Delivery Charge:</td>
+                <td class="text-end">৳${totalDeliveryCharge.toFixed(2)}</td>
+            </tr>`;
+            html += '</tbody></table>';
+            
+            list.innerHTML = html;
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+            list.innerHTML = '';
+        }
     }
     
     function validateForm() {
@@ -843,9 +1158,18 @@ document.addEventListener('DOMContentLoaded', function() {
         let hasValidProduct = false;
         
         productRows.forEach((row, index) => {
-            const product = row.querySelector('select[name$="-product"]').value;
-            const quantity = row.querySelector('input[name$="-quantity"]').value;
-            const price = row.querySelector('input[name$="-unit_price"]').value;
+            const productSelect = row.querySelector('select[name$="-product"]');
+            const quantityInput = row.querySelector('input[name$="-quantity"]');
+            const priceInput = row.querySelector('input[name$="-unit_price"]');
+            
+            // Skip if elements don't exist
+            if (!productSelect || !quantityInput || !priceInput) {
+                return;
+            }
+            
+            const product = productSelect.value;
+            const quantity = quantityInput.value;
+            const price = priceInput.value;
             
             if (product && quantity && price) {
                 const qty = parseFloat(quantity);
@@ -858,24 +1182,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     isValid = false;
                 }
             } else if (product || quantity || price) {
-                errors.push(`Product ${index + 1}: Please fill all required fields (product, quantity, price)`);
-                isValid = false;
+                // Partial entry - don't block submission, but mark as incomplete
+                // This allows user to continue filling the form
             }
         });
         
-        if (!hasValidProduct) {
-            errors.push('Please add at least one product to the order');
+        if (productRows.length > 0 && !hasValidProduct) {
+            // Only show error if there are product rows but none are valid
+            errors.push('Please complete at least one product entry (product, quantity, and price)');
             isValid = false;
         }
         
         // Update submit button
         const submitBtn = document.getElementById('submit-btn');
-        if (isValid) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> {% if object %}Update{% else %}Create{% endif %} Order';
-        } else {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Fix Errors First';
+        if (submitBtn) {
+            if (isValid && hasValidProduct) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> {% if object %}Update{% else %}Create{% endif %} Order';
+            } else if (productRows.length === 0) {
+                // No products yet - allow submission (Django will validate)
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> {% if object %}Update{% else %}Create{% endif %} Order';
+            } else {
+                submitBtn.disabled = false; // Allow submission, let Django handle validation
+                submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> {% if object %}Update{% else %}Create{% endif %} Order';
+            }
         }
         
         return isValid;
