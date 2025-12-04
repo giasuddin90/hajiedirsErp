@@ -4,6 +4,8 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.db.models import Q, Sum
 from decimal import Decimal
+from django.http import HttpResponse
+from django.template.loader import get_template
 from .models import Customer, CustomerLedger, CustomerCommitment
 from .forms import CustomerForm, CustomerLedgerForm, CustomerCommitmentForm, SetOpeningBalanceForm
 from sales.models import SalesOrder
@@ -268,3 +270,102 @@ def set_opening_balance(request, pk):
         'customer': customer,
         'form': form
     })
+
+
+def customer_ledger_pdf(request, pk):
+    """Generate PDF report for customer ledger"""
+    try:
+        customer = get_object_or_404(Customer, pk=pk)
+        transactions = []
+        
+        # Sales Orders
+        sales_orders = SalesOrder.objects.filter(customer=customer).order_by('-order_date')
+        for order in sales_orders:
+            transactions.append({
+                'date': order.order_date,
+                'type': 'Sales Order',
+                'reference': f"SO-{order.order_number}",
+                'description': f"Sales Order - {order.customer.name}",
+                'debit': order.total_amount,
+                'credit': Decimal('0.00'),
+                'status': order.status,
+                'created_at': order.created_at,
+            })
+        
+        # Manual Ledger Entries
+        ledger_entries = CustomerLedger.objects.filter(customer=customer).order_by('-transaction_date')
+        for entry in ledger_entries:
+            if entry.transaction_type == 'sale':
+                debit = entry.amount
+                credit = Decimal('0.00')
+            elif entry.transaction_type == 'payment':
+                debit = Decimal('0.00')
+                credit = entry.amount
+            elif entry.transaction_type == 'opening_balance':
+                debit = entry.amount if entry.amount > 0 else Decimal('0.00')
+                credit = abs(entry.amount) if entry.amount < 0 else Decimal('0.00')
+            else:
+                debit = entry.amount if entry.amount > 0 else Decimal('0.00')
+                credit = abs(entry.amount) if entry.amount < 0 else Decimal('0.00')
+            
+            transactions.append({
+                'date': entry.transaction_date.date(),
+                'type': entry.get_transaction_type_display(),
+                'reference': entry.reference or f"LED-{entry.id}",
+                'description': entry.description,
+                'debit': debit,
+                'credit': credit,
+                'status': 'manual',
+                'created_at': entry.created_at,
+                'payment_method': entry.payment_method,
+            })
+        
+        # Sort all transactions by date (newest first)
+        transactions.sort(key=lambda x: x['date'], reverse=True)
+        
+        # Calculate running balance
+        running_balance = Decimal('0.00')
+        for transaction in reversed(transactions):
+            running_balance += transaction['debit'] - transaction['credit']
+            transaction['balance'] = running_balance
+        
+        # Reverse to show newest first
+        transactions.reverse()
+        
+        # Calculate totals
+        total_debit = sum(t['debit'] for t in transactions)
+        total_credit = sum(t['credit'] for t in transactions)
+        current_balance = total_debit - total_credit
+        
+        # Calculate actual opening balance from ledger entries
+        opening_balance_entry = next((t for t in transactions if t['type'] == 'Opening Balance'), None)
+        if opening_balance_entry:
+            actual_opening_balance = opening_balance_entry['debit'] - opening_balance_entry['credit']
+        else:
+            actual_opening_balance = Decimal('0.00')
+        
+        # Get template
+        template = get_template('customers/ledger_pdf.html')
+        
+        # Prepare context
+        context = {
+            'customer': customer,
+            'transactions': transactions,
+            'total_debit': total_debit,
+            'total_credit': total_credit,
+            'opening_balance': actual_opening_balance,
+            'current_balance': current_balance,
+            'company_name': 'Sun Electric',
+            'company_address': '123 Business Street, City, Country',
+            'company_phone': '+1 234 567 8900',
+        }
+        
+        # Render HTML
+        html = template.render(context)
+        
+        # Return HTML response (can be printed as PDF)
+        return HttpResponse(html, content_type='text/html')
+        
+    except Exception as e:
+        messages.error(request, f"Error generating ledger report: {str(e)}")
+        return redirect('customers:customer_ledger_detail', pk=pk)

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Ledger - {{ customer.name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+        }
+        .ledger-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+        }
+        .ledger-header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        .ledger-header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+        .ledger-body {
+            padding: 15px 20px;
+        }
+        .top-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .company-info, .customer-info {
+            flex: 1;
+            margin: 0 10px;
+        }
+        .company-info h3, .customer-info h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .company-info p, .customer-info p {
+            margin: 2px 0;
+            font-size: 11px;
+            color: #666;
+        }
+        .summary-section {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .summary-box {
+            text-align: center;
+            flex: 1;
+        }
+        .summary-label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .summary-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .summary-value.positive {
+            color: #dc3545;
+        }
+        .summary-value.negative {
+            color: #28a745;
+        }
+        .transactions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+        .transactions-table th {
+            background: #495057;
+            color: white;
+            padding: 8px 6px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+            border: 1px solid #495057;
+        }
+        .transactions-table th.text-right {
+            text-align: right;
+        }
+        .transactions-table td {
+            padding: 6px;
+            border: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+        .transactions-table td.text-right {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        .transactions-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        .transactions-table tr:nth-child(odd) {
+            background: white;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+        .badge-primary {
+            background: #cce5ff;
+            color: #0066cc;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-dark {
+            background: #d6d8db;
+            color: #1b1e21;
+        }
+        .description-cell {
+            font-size: 10px;
+            max-width: 250px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 10px;
+            margin-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                font-size: 11px;
+            }
+            .ledger-container {
+                box-shadow: none;
+                max-width: none;
+                width: 100%;
+            }
+            .ledger-body {
+                padding: 10px 15px;
+            }
+            .top-section {
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+            }
+            .summary-section {
+                margin-bottom: 15px;
+                padding: 10px;
+            }
+            .transactions-table {
+                margin-bottom: 10px;
+                font-size: 10px;
+            }
+            .transactions-table th, .transactions-table td {
+                padding: 4px 6px;
+            }
+            @page {
+                margin: 0.4in;
+                size: A4 landscape;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ledger-container">
+        <!-- Header -->
+        <div class="ledger-header">
+            <h1>CUSTOMER LEDGER REPORT</h1>
+        </div>
+        
+        <!-- Body -->
+        <div class="ledger-body">
+            <!-- Company and Customer Information -->
+            <div class="top-section">
+                <div class="company-info">
+                    <h3>{{ company_name }}</h3>
+                    <p>{{ company_address }}</p>
+                    <p>Phone: {{ company_phone }}</p>
+                </div>
+                <div class="customer-info">
+                    <h3>Customer:</h3>
+                    <p><strong>{{ customer.name }}</strong></p>
+                    <p>{{ customer.address|default:"Address not provided" }}</p>
+                    <p>Phone: {{ customer.phone|default:"Not provided" }}</p>
+                    <p>Email: {{ customer.email|default:"Not provided" }}</p>
+                </div>
+            </div>
+            
+            <!-- Summary Section -->
+            <div class="summary-section">
+                <div class="summary-box">
+                    <div class="summary-label">Opening Balance</div>
+                    <div class="summary-value">৳{{ opening_balance|floatformat:2 }}</div>
+                </div>
+                <div class="summary-box">
+                    <div class="summary-label">Total Debit</div>
+                    <div class="summary-value">৳{{ total_debit|floatformat:2 }}</div>
+                </div>
+                <div class="summary-box">
+                    <div class="summary-label">Total Credit</div>
+                    <div class="summary-value">৳{{ total_credit|floatformat:2 }}</div>
+                </div>
+                <div class="summary-box">
+                    <div class="summary-label">Current Balance</div>
+                    <div class="summary-value {% if current_balance >= 0 %}positive{% else %}negative{% endif %}">
+                        ৳{{ current_balance|floatformat:2 }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Transactions Table -->
+            <table class="transactions-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Date</th>
+                        <th style="width: 12%;">Type</th>
+                        <th style="width: 10%;">Reference</th>
+                        <th style="width: 30%;">Description</th>
+                        <th style="width: 12%;" class="text-right">Debit</th>
+                        <th style="width: 12%;" class="text-right">Credit</th>
+                        <th style="width: 12%;" class="text-right">Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if transaction.type == 'Opening Balance' %}badge-dark
+                                {% elif transaction.type == 'Sales Order' %}badge-primary
+                                {% elif transaction.type == 'Payment' %}badge-success
+                                {% elif transaction.type == 'Return' %}badge-warning
+                                {% else %}badge-primary{% endif %}">
+                                {{ transaction.type }}
+                            </span>
+                        </td>
+                        <td><code>{{ transaction.reference }}</code></td>
+                        <td class="description-cell">{{ transaction.description }}</td>
+                        <td class="text-right">
+                            {% if transaction.debit > 0 %}
+                                ৳{{ transaction.debit|floatformat:2 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            {% if transaction.credit > 0 %}
+                                ৳{{ transaction.credit|floatformat:2 }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <strong class="{% if transaction.balance >= 0 %}positive{% else %}negative{% endif %}">
+                                ৳{{ transaction.balance|floatformat:2 }}
+                            </strong>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px; color: #666;">
+                            No transactions found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Generated: {{ "now"|date:"M d, Y g:i A" }} | Customer: {{ customer.name }}</p>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-print when page loads
+        window.onload = function() {
+            window.print();
+        }
+    </script>
+</body>
+</html>
+
