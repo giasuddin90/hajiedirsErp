@@ -9,6 +9,7 @@ from django.template.loader import get_template
 from .models import Customer, CustomerLedger, CustomerCommitment
 from .forms import CustomerForm, CustomerLedgerForm, CustomerCommitmentForm, SetOpeningBalanceForm
 from sales.models import SalesOrder
+from core.utils import get_company_info
 
 
 class CustomerListView(ListView):
@@ -348,6 +349,7 @@ def customer_ledger_pdf(request, pk):
         template = get_template('customers/ledger_pdf.html')
         
         # Prepare context
+        company_info = get_company_info()
         context = {
             'customer': customer,
             'transactions': transactions,
@@ -355,9 +357,7 @@ def customer_ledger_pdf(request, pk):
             'total_credit': total_credit,
             'opening_balance': actual_opening_balance,
             'current_balance': current_balance,
-            'company_name': 'Sun Electric',
-            'company_address': '123 Business Street, City, Country',
-            'company_phone': '+1 234 567 8900',
+            **company_info,  # Unpack company info into context
         }
         
         # Render HTML

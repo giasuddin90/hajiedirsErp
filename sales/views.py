@@ -16,6 +16,7 @@ from .forms import SalesOrderForm, SalesOrderItemFormSet, SalesOrderItemFormSetC
 from customers.models import Customer, CustomerLedger
 from stock.models import Product, ProductCategory, ProductBrand
 from django.contrib.auth.models import User
+from core.utils import get_company_info
 import uuid
 
 
@@ -480,6 +481,7 @@ def sales_order_invoice(request, order_id):
         template = get_template('sales/invoice_pdf.html')
         
         # Prepare context
+        company_info = get_company_info()
         context = {
             'order': order,
             'items': order.items.all(),
@@ -488,9 +490,7 @@ def sales_order_invoice(request, order_id):
             'subtotal': subtotal,
             'delivery_charges': delivery_charges,
             'transportation_cost': transportation_cost,
-            'company_name': 'Sun Electric',
-            'company_address': '123 Business Street, City, Country',
-            'company_phone': '+1 234 567 8900',
+            **company_info,  # Unpack company info into context
         }
         
         # Render HTML
