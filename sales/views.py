@@ -6,16 +6,128 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.conf import settings
+from django.utils import timezone
 from decimal import Decimal
 import os
 from .models import (
     SalesOrder, SalesOrderItem
 )
 from .forms import SalesOrderForm, SalesOrderItemFormSet, SalesOrderItemFormSetCustom, InstantSalesForm
-from customers.models import Customer
+from customers.models import Customer, CustomerLedger
 from stock.models import Product, ProductCategory, ProductBrand
 from django.contrib.auth.models import User
 import uuid
+
+
+def generate_invoice_description(order):
+    """
+    Generate full invoice description for customer ledger entry
+    Includes all products, quantities, prices, delivery charges, and transportation cost
+    """
+    description_parts = []
+    description_parts.append(f"{order.order_number} | {order.order_date.strftime('%Y-%m-%d')}")
+    
+    # Add products
+    for item in order.items.all():
+        product_line = f"{item.product.name} - {item.quantity} {item.product.unit_type} @ ৳{item.unit_price:.2f} = ৳{item.total_price:.2f}"
+        
+        # Add tile information if applicable
+        if item.product.category and item.product.category.name.lower() == 'tiles':
+            pcs_per_carton = item.product.pcs_per_carton or 0
+            sqft_per_pcs = item.product.sqft_per_pcs or Decimal('0')
+            if sqft_per_pcs > 0 and pcs_per_carton > 0:
+                unit_code = item.product.unit_type.code.lower() if item.product.unit_type else ''
+                if unit_code == 'sqft':
+                    total_sqft = item.quantity
+                    total_pieces = total_sqft / sqft_per_pcs
+                else:
+                    total_pieces = item.quantity
+                    total_sqft = total_pieces * sqft_per_pcs
+                
+                cartons = int(total_pieces // pcs_per_carton)
+                remaining_pieces = int(total_pieces % pcs_per_carton)
+                
+                product_line += f" ({int(total_sqft)} sqft, {cartons} carton"
+                if remaining_pieces > 0:
+                    product_line += f" {remaining_pieces} pcs"
+                product_line += ")"
+        
+        description_parts.append(product_line)
+    
+    # Calculate subtotal and charges
+    subtotal = sum(item.total_price for item in order.items.all())
+    delivery_charges = Decimal('0')
+    for item in order.items.all():
+        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+        delivery_charges += item.quantity * delivery_charge_per_unit
+    
+    transportation_cost = order.transportation_cost or Decimal('0')
+    total_amount = subtotal + delivery_charges + transportation_cost
+    
+    # Add cost breakdown
+    description_parts.append(f"Subtotal: ৳{subtotal:.2f}")
+    if delivery_charges > 0:
+        description_parts.append(f"Delivery: ৳{delivery_charges:.2f}")
+    if transportation_cost > 0:
+        description_parts.append(f"Transport: ৳{transportation_cost:.2f}")
+    description_parts.append(f"Total: ৳{total_amount:.2f}")
+    
+    # Add notes if any
+    if order.notes:
+        description_parts.append(f"Notes: {order.notes}")
+    
+    return "\n".join(description_parts)
+
+
+def create_customer_ledger_entry(order, user=None, update_existing=False):
+    """
+    Create or update customer ledger entry for sales order with full invoice details
+    """
+    if not order.customer:
+        return None
+    
+    # Generate full invoice description
+    description = generate_invoice_description(order)
+    
+    # Check if ledger entry already exists for this order
+    existing_entry = None
+    if update_existing:
+        existing_entry = CustomerLedger.objects.filter(
+            customer=order.customer,
+            reference=order.order_number,
+            transaction_type='sale'
+        ).first()
+    
+    if existing_entry:
+        # Update existing entry
+        old_amount = existing_entry.amount
+        existing_entry.amount = order.total_amount
+        existing_entry.description = description
+        existing_entry.transaction_date = timezone.now()
+        existing_entry.save()
+        
+        # Update customer balance (remove old amount, add new amount)
+        order.customer.current_balance = order.customer.current_balance - old_amount + order.total_amount
+        order.customer.save()
+        
+        return existing_entry
+    else:
+        # Create new ledger entry
+        ledger_entry = CustomerLedger.objects.create(
+            customer=order.customer,
+            transaction_type='sale',
+            amount=order.total_amount,
+            description=description,
+            reference=order.order_number,
+            transaction_date=timezone.now(),
+            created_by=user or order.created_by
+        )
+        
+        # Update customer balance
+        order.customer.current_balance += order.total_amount
+        order.customer.save()
+        
+        return ledger_entry
 
 
 class SalesOrderListView(ListView):
@@ -85,6 +197,10 @@ class SalesOrderCreateView(CreateView):
                     total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
                     self.object.save()
+                    
+                    # Create customer ledger entry with full invoice details
+                    if self.object.customer:
+                        create_customer_ledger_entry(self.object, self.request.user)
                     
                     items_count = self.object.items.count()
                     if items_count > 0:
@@ -202,6 +318,10 @@ class SalesOrderUpdateView(UpdateView):
                     total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
                     self.object.save()
+                    
+                    # Update customer ledger entry with full invoice details
+                    if self.object.customer:
+                        create_customer_ledger_entry(self.object, self.request.user, update_existing=True)
                     
                     items_count = self.object.items.count()
                     messages.success(self.request, f"Sales order {self.object.order_number} updated successfully with {items_count} products! Total: ৳{total_amount}")
@@ -452,6 +572,10 @@ class InstantSalesCreateView(CreateView):
                     self.object.save()
                     print(f"DEBUG: Total amount set to: {total_amount}")
                     
+                    # Create customer ledger entry with full invoice details
+                    if self.object.customer:
+                        create_customer_ledger_entry(self.object, self.request.user)
+                    
                     # Inventory is calculated in real-time from sales orders
                     # Instant sales (sales_type='instant') are automatically included
                     # in the real-time inventory calculation, so no manual update needed
@@ -541,6 +665,10 @@ class InstantSalesUpdateView(UpdateView):
                     total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
                     self.object.save()
+                    
+                    # Update customer ledger entry with full invoice details
+                    if self.object.customer:
+                        create_customer_ledger_entry(self.object, self.request.user, update_existing=True)
                     
                     items_count = self.object.items.count()
                     messages.success(self.request, f"Instant sale {self.object.order_number} updated successfully with {items_count} products! Total: ৳{total_amount}")
