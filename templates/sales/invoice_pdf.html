@@ -24,15 +24,28 @@
             background: white;
         }
         .invoice-header {
-            background: #2c3e50;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
-            padding: 15px 20px;
+            padding: 20px;
             text-align: center;
+            border-bottom: 4px solid #1a252f;
+        }
+        .invoice-header .company-brand {
+            margin-bottom: 10px;
+        }
+        .invoice-header .company-brand h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
         .invoice-header h1 {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 10px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
         .invoice-body {
             padding: 15px 20px;
@@ -47,26 +60,54 @@
         .company-info, .customer-info {
             flex: 1;
             margin: 0 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .company-info {
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .customer-info {
+            padding-left: 12px;
         }
         .company-info h3, .customer-info h3 {
             font-size: 14px;
             margin-bottom: 8px;
+            margin-top: 0;
             color: #2c3e50;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 2px solid #2c3e50;
             padding-bottom: 5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            width: 100%;
         }
         .company-info p, .customer-info p {
-            margin: 2px 0;
+            margin: 4px 0;
             font-size: 11px;
-            color: #666;
+            color: #495057;
+            line-height: 1.5;
+        }
+        .company-info p {
+            font-weight: 500;
+        }
+        .company-info .company-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 6px;
+            margin-top: 0;
         }
         .invoice-details {
             display: flex;
             justify-content: space-between;
             margin-bottom: 15px;
-            padding: 10px;
+            padding: 12px;
             background: #f8f9fa;
-            border-radius: 4px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
         }
         .detail-group {
             flex: 1;
@@ -113,13 +154,15 @@
             table-layout: fixed;
         }
         .items-table th {
-            background: #495057;
+            background: linear-gradient(135deg, #495057 0%, #5a6268 100%);
             color: white;
-            padding: 8px 6px;
+            padding: 10px 8px;
             text-align: left;
-            font-weight: 600;
-            font-size: 10px;
+            font-weight: 700;
+            font-size: 11px;
             border: 1px solid #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .items-table th:first-child {
             text-align: left;
@@ -169,11 +212,12 @@
             margin-top: 10px;
         }
         .total-box {
-            width: 220px;
+            width: 240px;
             background: #f8f9fa;
-            padding: 12px;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
+            padding: 14px;
+            border-radius: 6px;
+            border: 2px solid #2c3e50;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .total-row {
             display: flex;
@@ -196,12 +240,17 @@
         }
         .footer {
             text-align: center;
-            padding: 10px;
-            background: #f8f9fa;
-            color: #666;
+            padding: 12px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #495057;
             font-size: 10px;
             margin-top: 15px;
-            border-top: 1px solid #dee2e6;
+            border-top: 3px solid #2c3e50;
+            font-weight: 500;
+        }
+        .footer .company-name {
+            font-weight: 700;
+            color: #2c3e50;
         }
         @media print {
             body {
@@ -259,7 +308,10 @@
     <div class="invoice-container">
         <!-- Header -->
         <div class="invoice-header">
-            <h1>INVOICE</h1>
+            <div class="company-brand">
+                <h2>{{ company_name }}</h2>
+            </div>
+            <h1>Invoice</h1>
         </div>
         
         <!-- Body -->
@@ -267,9 +319,10 @@
             <!-- Company and Customer Information -->
             <div class="top-section">
                 <div class="company-info">
-                    <h3>{{ company_name }}</h3>
+                    <h3>Company Information</h3>
+                    <p class="company-name">{{ company_name }}</p>
                     <p>{{ company_address }}</p>
-                    <p>Phone: {{ company_phone }}</p>
+                    <p><strong>Phone:</strong> {{ company_phone }}</p>
                 </div>
                 <div class="customer-info">
                     <h3>Bill To:</h3>
@@ -393,7 +446,7 @@
         
         <!-- Footer -->
         <div class="footer">
-            <p>Thank you for your business! | Generated: {{ "now"|date:"M d, Y g:i A" }}</p>
+            <p><span class="company-name">{{ company_name }}</span> | Thank you for your business! | Generated: {{ "now"|date:"M d, Y g:i A" }}</p>
         </div>
     </div>
     
