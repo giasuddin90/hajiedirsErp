@@ -205,3 +205,4 @@ product.category.name.lower() == 'tiles'
 - ✅ Needs `pcs_per_carton` > 0 and `sqft_per_pcs` > 0 for calculations
 - ✅ Works automatically in invoice generation
 
+

@@ -330,8 +330,9 @@ def sales_order_invoice(request, order_id):
                     
                     if unit_code == 'sqft':
                         # Quantity is in sqft
-                        total_sqft = item.quantity
-                        total_pieces = total_sqft / sqft_per_pcs
+                        total_pieces = item.quantity
+                        total_sqft = item.quantity * sqft_per_pcs
+                        # total_pieces = total_sqft / sqft_per_pcs
                     else:
                         # Quantity is in pieces, calculate sqft
                         total_pieces = item.quantity
