@@ -24,15 +24,34 @@
             background: white;
         }
         .ledger-header {
-            background: #2c3e50;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
             color: white;
-            padding: 15px 20px;
+            padding: 20px;
             text-align: center;
+            border-bottom: 4px solid #1a252f;
+        }
+        .ledger-header .company-brand {
+            margin-bottom: 10px;
+        }
+        .ledger-header .company-brand h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .ledger-header .company-brand .tagline {
+            font-size: 11px;
+            margin-top: 5px;
+            opacity: 0.9;
+            font-weight: 300;
         }
         .ledger-header h1 {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 10px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
         .ledger-body {
             padding: 15px 20px;
@@ -47,18 +66,48 @@
         .company-info, .customer-info {
             flex: 1;
             margin: 0 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .company-info {
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #2c3e50;
+        }
+        .customer-info {
+            padding-left: 12px;
         }
         .company-info h3, .customer-info h3 {
             font-size: 14px;
             margin-bottom: 8px;
+            margin-top: 0;
             color: #2c3e50;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 2px solid #2c3e50;
             padding-bottom: 5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .company-info h3 {
+            color: #2c3e50;
         }
         .company-info p, .customer-info p {
-            margin: 2px 0;
+            margin: 4px 0;
             font-size: 11px;
-            color: #666;
+            color: #495057;
+            line-height: 1.5;
+        }
+        .company-info p {
+            font-weight: 500;
+        }
+        .company-info .company-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 6px;
+            margin-top: 0;
         }
         .summary-section {
             display: flex;
@@ -154,12 +203,17 @@
         }
         .footer {
             text-align: center;
-            padding: 10px;
-            background: #f8f9fa;
-            color: #666;
+            padding: 12px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #495057;
             font-size: 10px;
             margin-top: 15px;
-            border-top: 1px solid #dee2e6;
+            border-top: 3px solid #2c3e50;
+            font-weight: 500;
+        }
+        .footer .company-name {
+            font-weight: 700;
+            color: #2c3e50;
         }
         @media print {
             body {
@@ -201,7 +255,10 @@
     <div class="ledger-container">
         <!-- Header -->
         <div class="ledger-header">
-            <h1>CUSTOMER LEDGER REPORT</h1>
+            <div class="company-brand">
+                <h2>{{ company_name }}</h2>
+            </div>
+            <h1>Customer Ledger Report</h1>
         </div>
         
         <!-- Body -->
@@ -209,16 +266,16 @@
             <!-- Company and Customer Information -->
             <div class="top-section">
                 <div class="company-info">
-                    <h3>{{ company_name }}</h3>
+                    <h3>Company Information</h3>
+                    <p class="company-name">{{ company_name }}</p>
                     <p>{{ company_address }}</p>
-                    <p>Phone: {{ company_phone }}</p>
+                    <p><strong>Phone:</strong> {{ company_phone }}</p>
                 </div>
                 <div class="customer-info">
-                    <h3>Customer:</h3>
+                    <h3>Customer Information</h3>
                     <p><strong>{{ customer.name }}</strong></p>
                     <p>{{ customer.address|default:"Address not provided" }}</p>
-                    <p>Phone: {{ customer.phone|default:"Not provided" }}</p>
-                    <p>Email: {{ customer.email|default:"Not provided" }}</p>
+                    <p><strong>Phone:</strong> {{ customer.phone|default:"Not provided" }}</p>
                 </div>
             </div>
             
@@ -306,7 +363,7 @@
         
         <!-- Footer -->
         <div class="footer">
-            <p>Generated: {{ "now"|date:"M d, Y g:i A" }} | Customer: {{ customer.name }}</p>
+            <p><span class="company-name">{{ company_name }}</span> | Generated: {{ "now"|date:"M d, Y g:i A" }} | Customer: {{ customer.name }}</p>
         </div>
     </div>
     
