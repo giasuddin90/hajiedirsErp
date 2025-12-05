@@ -275,6 +275,12 @@ class GoodsReceiptCreateView(CreateView):
         
         # Create formset with purchase_order
         if self.request.POST:
+            # For POST, we need to get purchase_order from form data if not already set
+            if not purchase_order:
+                purchase_order_id_from_form = self.request.POST.get('purchase_order')
+                if purchase_order_id_from_form:
+                    purchase_order = get_object_or_404(PurchaseOrder, pk=purchase_order_id_from_form)
+                    context['purchase_order'] = purchase_order
             formset = GoodsReceiptItemFormSet(self.request.POST, purchase_order=purchase_order)
         else:
             formset = GoodsReceiptItemFormSet(purchase_order=purchase_order)
@@ -396,3 +402,33 @@ def cancel_goods_receipt(request, pk):
         messages.warning(request, f'⚠️ Only received receipts can be cancelled.')
     
     return redirect('purchases:receipt_detail', pk=receipt.pk)
+
+
+def get_purchase_order_items(request, purchase_order_id):
+    """AJAX endpoint to get purchase order items for a given purchase order"""
+    try:
+        purchase_order = get_object_or_404(PurchaseOrder, pk=purchase_order_id)
+        items = purchase_order.items.all().select_related('product')
+        
+        items_data = []
+        for item in items:
+            remaining_qty = item.get_remaining_quantity()
+            items_data.append({
+                'id': item.id,
+                'product_name': item.product.name,
+                'ordered_quantity': str(item.quantity),
+                'received_quantity': str(item.get_received_quantity()),
+                'remaining_quantity': str(remaining_qty),
+                'unit_price': str(item.unit_price),
+                'unit_type': item.product.unit_type.code if item.product.unit_type else '',
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'items': items_data
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)

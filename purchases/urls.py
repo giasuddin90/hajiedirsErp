@@ -26,6 +26,7 @@ urlpatterns = [
     path('receipts/<int:pk>/delete/', views.GoodsReceiptDeleteView.as_view(), name='receipt_delete'),
     path('receipts/<int:pk>/confirm/', views.confirm_goods_receipt, name='receipt_confirm'),
     path('receipts/<int:pk>/cancel/', views.cancel_goods_receipt, name='receipt_cancel'),
+    path('ajax/purchase-order-items/<int:purchase_order_id>/', views.get_purchase_order_items, name='get_purchase_order_items'),
     
     # Reports
     path('reports/daily/', views.PurchaseDailyReportView.as_view(), name='purchase_daily_report'),

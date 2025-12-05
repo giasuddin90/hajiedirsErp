@@ -201,6 +201,8 @@ class GoodsReceiptForm(forms.ModelForm):
         self.fields['purchase_order'].queryset = PurchaseOrder.objects.filter(
             status__in=['purchase-order', 'goods-received']
         ).order_by('-order_date')
+        # Add data attribute for JavaScript
+        self.fields['purchase_order'].widget.attrs['id'] = 'id_purchase_order'
 
 
 class GoodsReceiptItemForm(forms.ModelForm):
@@ -250,11 +252,21 @@ class GoodsReceiptItemForm(forms.ModelForm):
                 purchase_order=self.purchase_order
             ).select_related('product')
         else:
-            self.fields['purchase_order_item'].queryset = PurchaseOrderItem.objects.none()
+            # If no purchase_order provided initially, show all items
+            # The queryset will be validated in clean() method
+            self.fields['purchase_order_item'].queryset = PurchaseOrderItem.objects.all().select_related('product')
         
         # Filter warehouses
         self.fields['warehouse'].queryset = Warehouse.objects.filter(is_active=True)
         self.fields['warehouse'].required = False
+    
+    def set_purchase_order(self, purchase_order):
+        """Update the purchase_order and refresh the queryset"""
+        self.purchase_order = purchase_order
+        if purchase_order:
+            self.fields['purchase_order_item'].queryset = PurchaseOrderItem.objects.filter(
+                purchase_order=purchase_order
+            ).select_related('product')
     
     def clean_quantity(self):
         quantity = self.cleaned_data.get('quantity')
@@ -277,6 +289,22 @@ class GoodsReceiptItemForm(forms.ModelForm):
         purchase_order_item = cleaned_data.get('purchase_order_item')
         quantity = cleaned_data.get('quantity', 0)
         unit_cost = cleaned_data.get('unit_cost', 0)
+        
+        # If purchase_order_item is selected but purchase_order is not set yet,
+        # get it from the purchase_order_item itself
+        if purchase_order_item and not self.purchase_order:
+            self.purchase_order = purchase_order_item.purchase_order
+            # Update queryset to match
+            self.fields['purchase_order_item'].queryset = PurchaseOrderItem.objects.filter(
+                purchase_order=self.purchase_order
+            ).select_related('product')
+        
+        # Validate purchase_order_item belongs to the correct purchase_order
+        if purchase_order_item and self.purchase_order:
+            if purchase_order_item.purchase_order != self.purchase_order:
+                raise forms.ValidationError(
+                    'Selected order item does not belong to the selected purchase order.'
+                )
         
         if purchase_order_item and quantity:
             # Check if quantity exceeds remaining quantity
@@ -340,13 +368,19 @@ class GoodsReceiptItemFormSet(BaseGoodsReceiptItemFormSet):
         self.purchase_order = kwargs.pop('purchase_order', None)
         super().__init__(*args, **kwargs)
         
-        # Pass purchase_order to each form
+        # Pass purchase_order to each form and update queryset
         for form in self.forms:
-            form.purchase_order = self.purchase_order
+            if self.purchase_order:
+                form.set_purchase_order(self.purchase_order)
+            else:
+                form.purchase_order = self.purchase_order
     
     def _construct_form(self, i, **kwargs):
         form = super()._construct_form(i, **kwargs)
-        form.purchase_order = self.purchase_order
+        if self.purchase_order:
+            form.set_purchase_order(self.purchase_order)
+        else:
+            form.purchase_order = self.purchase_order
         return form
 
 

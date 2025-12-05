@@ -155,6 +155,80 @@ document.addEventListener('DOMContentLoaded', function() {
         receiptDateInput.value = today;
     }
     
+    const purchaseOrderSelect = document.getElementById('id_purchase_order') || document.getElementById('{{ form.purchase_order.id_for_label }}');
+    let purchaseOrderItems = {}; // Store items data by purchase order ID
+    
+    // Load purchase order items when purchase order is selected
+    function loadPurchaseOrderItems(purchaseOrderId) {
+        if (!purchaseOrderId) {
+            // Clear all purchase_order_item dropdowns
+            updatePurchaseOrderItemDropdowns([]);
+            return;
+        }
+        
+        // Check if we already have the items cached
+        if (purchaseOrderItems[purchaseOrderId]) {
+            updatePurchaseOrderItemDropdowns(purchaseOrderItems[purchaseOrderId]);
+            return;
+        }
+        
+        // Fetch items via AJAX
+        fetch(`{% url 'purchases:get_purchase_order_items' 0 %}`.replace('0', purchaseOrderId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    purchaseOrderItems[purchaseOrderId] = data.items;
+                    updatePurchaseOrderItemDropdowns(data.items);
+                } else {
+                    console.error('Error loading purchase order items:', data.error);
+                    alert('Error loading purchase order items. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading purchase order items. Please try again.');
+            });
+    }
+    
+    // Update all purchase_order_item dropdowns with new items
+    function updatePurchaseOrderItemDropdowns(items) {
+        const selects = document.querySelectorAll('.purchase-order-item-select');
+        selects.forEach(select => {
+            const currentValue = select.value;
+            // Clear existing options except the first empty one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add new options
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = `${item.product_name} (Ordered: ${item.ordered_quantity} ${item.unit_type}, Remaining: ${item.remaining_quantity} ${item.unit_type})`;
+                option.dataset.remainingQty = item.remaining_quantity;
+                option.dataset.unitPrice = item.unit_price;
+                select.appendChild(option);
+            });
+            
+            // Restore previous selection if it still exists
+            if (currentValue && Array.from(select.options).some(opt => opt.value === currentValue)) {
+                select.value = currentValue;
+            }
+        });
+    }
+    
+    // Listen for purchase order changes
+    if (purchaseOrderSelect) {
+        purchaseOrderSelect.addEventListener('change', function() {
+            loadPurchaseOrderItems(this.value);
+        });
+        
+        // Load items if purchase order is already selected (e.g., when editing or from URL parameter)
+        if (purchaseOrderSelect.value) {
+            loadPurchaseOrderItems(purchaseOrderSelect.value);
+        }
+    }
+    
     // Calculate totals
     function calculateTotal() {
         let total = 0;
@@ -162,7 +236,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const value = parseFloat(input.value) || 0;
             total += value;
         });
-        document.getElementById('id_total_amount').value = total.toFixed(2);
+        const totalAmountInput = document.getElementById('id_total_amount');
+        if (totalAmountInput) {
+            totalAmountInput.value = total.toFixed(2);
+        }
     }
     
     // Calculate item total
@@ -176,14 +253,26 @@ document.addEventListener('DOMContentLoaded', function() {
         calculateTotal();
     }
     
-    // Update remaining quantity
+    // Update remaining quantity and auto-fill unit cost
     function updateRemainingQty(select) {
         const form = select.closest('.receipt-item-form');
         const remainingQtyEl = form.querySelector('.remaining-qty');
+        const unitCostInput = form.querySelector('.cost-input');
+        
         if (select.value) {
-            // Fetch remaining quantity via AJAX or use data attribute
-            // For now, we'll show a placeholder
-            remainingQtyEl.textContent = 'Check remaining qty';
+            const selectedOption = select.options[select.selectedIndex];
+            const remainingQty = selectedOption.dataset.remainingQty || '0';
+            const unitPrice = selectedOption.dataset.unitPrice || '0';
+            
+            remainingQtyEl.textContent = `Remaining: ${remainingQty}`;
+            
+            // Auto-fill unit cost if empty
+            if (unitCostInput && !unitCostInput.value) {
+                unitCostInput.value = parseFloat(unitPrice).toFixed(2);
+                calculateItemTotal(form);
+            }
+        } else {
+            remainingQtyEl.textContent = '';
         }
     }
     
@@ -194,14 +283,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    document.querySelectorAll('.purchase-order-item-select').forEach(select => {
-        select.addEventListener('change', function() {
-            updateRemainingQty(this);
-            // Auto-fill unit cost from purchase order item
-            if (this.value) {
-                // You can add AJAX call here to fetch unit price
-            }
-        });
+    // Use event delegation for dynamically added forms
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('purchase-order-item-select')) {
+            updateRemainingQty(e.target);
+        }
     });
     
     // Add new item
@@ -210,22 +296,43 @@ document.addEventListener('DOMContentLoaded', function() {
         addItemBtn.addEventListener('click', function() {
             const formCount = parseInt(document.getElementById('id_items-TOTAL_FORMS').value);
             const container = document.getElementById('formset-container');
-            const newForm = container.querySelector('.receipt-item-form').cloneNode(true);
+            const firstForm = container.querySelector('.receipt-item-form');
+            if (!firstForm) return;
+            
+            const newForm = firstForm.cloneNode(true);
             
             // Update form indices
             newForm.querySelectorAll('input, select').forEach(input => {
                 if (input.name) {
-                    input.name = input.name.replace(/-0-/, `-${formCount}-`);
-                    input.id = input.id.replace(/-0-/, `-${formCount}-`);
+                    const nameMatch = input.name.match(/items-(\d+)-/);
+                    if (nameMatch) {
+                        input.name = input.name.replace(/items-\d+-/, `items-${formCount}-`);
+                        input.id = input.id.replace(/items-\d+-/, `items-${formCount}-`);
+                    }
                 }
             });
             
             // Clear values
             newForm.querySelectorAll('input[type="number"], select').forEach(input => {
-                if (input.name && !input.name.includes('DELETE')) {
+                if (input.name && !input.name.includes('DELETE') && !input.name.includes('id')) {
                     input.value = '';
                 }
             });
+            
+            // Clear remaining quantity display
+            const remainingQtyEl = newForm.querySelector('.remaining-qty');
+            if (remainingQtyEl) {
+                remainingQtyEl.textContent = '';
+            }
+            
+            // Update purchase_order_item dropdown with current items
+            const purchaseOrderItemSelect = newForm.querySelector('.purchase-order-item-select');
+            if (purchaseOrderSelect && purchaseOrderSelect.value) {
+                const currentSelect = firstForm.querySelector('.purchase-order-item-select');
+                if (currentSelect) {
+                    purchaseOrderItemSelect.innerHTML = currentSelect.innerHTML;
+                }
+            }
             
             container.appendChild(newForm);
             document.getElementById('id_items-TOTAL_FORMS').value = formCount + 1;
