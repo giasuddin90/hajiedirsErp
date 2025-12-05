@@ -381,10 +381,11 @@
             <table class="items-table">
                 <thead>
                     <tr>
-                        <th style="width: 50%;">Product</th>
-                        <th style="width: 15%;">Qty</th>
-                        <th style="width: 17.5%;">Unit Price</th>
-                        <th style="width: 17.5%;">Total</th>
+                        <th style="width: 40%;">Product</th>
+                        <th style="width: 15%;">Warehouse</th>
+                        <th style="width: 12%;">Qty</th>
+                        <th style="width: 16.5%;">Unit Price</th>
+                        <th style="width: 16.5%;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -402,6 +403,13 @@
                                 {% endif %}
                             </div>
                             <div class="product-unit">{{ item_data.item.product.unit_type }}</div>
+                        </td>
+                        <td>
+                            {% if item_data.item.warehouse %}
+                                <span style="font-weight: 600; color: #495057;">{{ item_data.item.warehouse.name }}</span>
+                            {% else %}
+                                <span style="color: #999; font-style: italic;">-</span>
+                            {% endif %}
                         </td>
                         <td class="number-cell">{{ item_data.item.quantity|floatformat:0 }}</td>
                         <td class="number-cell">৳{{ item_data.item.unit_price|floatformat:2 }}</td>

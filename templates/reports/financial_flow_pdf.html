@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Financial Flow Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; margin: 0; padding: 0; }
+        .container { padding: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 15px; }
+        .header h2 { margin: 0; }
+        .header p { margin: 2px 0; color: #555; }
+        .meta { margin-bottom: 15px; }
+        .meta div { margin: 3px 0; }
+        .cards { display: flex; gap: 12px; margin-bottom: 15px; }
+        .card { flex: 1; border: 1px solid #ddd; padding: 10px; border-radius: 6px; }
+        .card h4 { margin: 0 0 6px 0; font-size: 12px; color: #555; }
+        .card .value { font-size: 16px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th, td { border: 1px solid #ddd; padding: 6px; font-size: 11px; }
+        th { background: #f5f5f5; text-align: left; }
+        .text-right { text-align: right; }
+        .muted { color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>{{ company_name }}</h2>
+            <p>{{ company_address }}</p>
+            <p>Phone: {{ company_phone }}</p>
+            <h3>Cash/Bank Flow Report</h3>
+            <p style="color: #666; font-size: 11px;">Inflow: Customer Payments | Outflow: Supplier Payments & Expenses</p>
+        </div>
+
+        <div class="meta">
+            <div><strong>Period:</strong> {{ start_date }} to {{ end_date }}</div>
+            <div><strong>Generated:</strong> {{ "now"|date:"M d, Y H:i" }}</div>
+        </div>
+
+        <div class="cards">
+            <div class="card">
+                <h4>Total Inflow</h4>
+                <div class="value">৳{{ total_inflow|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>Supplier Outflow</h4>
+                <div class="value">৳{{ total_outflow_suppliers|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>Expenses</h4>
+                <div class="value">৳{{ total_expenses|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>Net Flow</h4>
+                <div class="value">৳{{ net_flow|floatformat:2 }}</div>
+            </div>
+        </div>
+
+        <h4>Cash/Bank Inflow by Customer (Payments Received)</h4>
+        {% if inflow_by_customer %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th class="text-right">Payments</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in inflow_by_customer %}
+                <tr>
+                    <td>{{ row.customer__name|default:"Anonymous" }}</td>
+                    <td class="text-right">{{ row.payments }}</td>
+                    <td class="text-right">৳{{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No cash/bank inflow records for this period.</p>
+        {% endif %}
+
+        <h4>Cash/Bank Outflow by Supplier (Payments Made)</h4>
+        {% if outflow_by_supplier %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th class="text-right">Payments</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in outflow_by_supplier %}
+                <tr>
+                    <td>{{ row.supplier__name|default:"Unknown" }}</td>
+                    <td class="text-right">{{ row.payments }}</td>
+                    <td class="text-right">৳{{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No cash/bank outflow records for this period.</p>
+        {% endif %}
+
+        <h4>Expenses by Title (Paid - Cash/Bank Outflow)</h4>
+        {% if expenses_by_title %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Expense Title</th>
+                    <th class="text-right">Count</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in expenses_by_title %}
+                <tr>
+                    <td>{{ row.title }}</td>
+                    <td class="text-right">{{ row.count }}</td>
+                    <td class="text-right">৳{{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No expenses recorded for this period.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
+

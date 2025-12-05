@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.views.generic import ListView
 from django.http import HttpResponse
+from django.template.loader import get_template
 from django.utils import timezone
 from django.db.models import Sum, Count
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -15,10 +16,12 @@ from django.utils.dateparse import parse_date
 
 from .models import ReportLog
 from sales.models import SalesOrder
-from purchases.models import PurchaseOrder
+from purchases.models import PurchaseOrder, GoodsReceipt
 from stock.models import Product
-from customers.models import Customer
+from customers.models import Customer, CustomerLedger
+from suppliers.models import SupplierLedger
 from expenses.models import Expense
+from core.utils import get_company_info
 
 
 # ==================== ENHANCED REPORTS WITH TIME RANGE FILTERING ====================
@@ -490,6 +493,214 @@ class ProfitLossReportView(LoginRequiredMixin, ListView):
             })
         
         return context
+
+
+# ==================== CASH FLOW (INFLOW/OUTFLOW) REPORT ====================
+
+class FinancialFlowReportView(LoginRequiredMixin, ListView):
+    """Inflow/Outflow by customer, supplier and expense title with PDF download."""
+    template_name = 'reports/financial_flow.html'
+    context_object_name = 'flows'
+
+    def get_queryset(self):
+        return []
+
+    def _get_date_range(self):
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
+
+        # Default to last 30 days
+        start_date = parse_date(start_date_str) if start_date_str else (timezone.now() - timedelta(days=30)).date()
+        end_date = parse_date(end_date_str) if end_date_str else timezone.now().date()
+        return start_date, end_date
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        start_date, end_date = self._get_date_range()
+
+        # Inflow: Cash/Bank received from customers (CustomerLedger with transaction_type='payment')
+        from datetime import datetime as dt
+        start_datetime = timezone.make_aware(dt.combine(start_date, dt.min.time()))
+        end_datetime = timezone.make_aware(dt.combine(end_date, dt.max.time()))
+        
+        customer_payments_qs = CustomerLedger.objects.filter(
+            transaction_type='payment',
+            transaction_date__range=[start_datetime, end_datetime]
+        ).select_related('customer')
+
+        # Calculate total inflow from customer payments
+        total_inflow = customer_payments_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        inflow_by_customer = customer_payments_qs.values('customer__name').annotate(
+            total=Sum('amount'),
+            payments=Count('id')
+        ).order_by('-total')
+
+        # Outflow: Cash/Bank paid to suppliers (SupplierLedger with transaction_type='payment')
+        supplier_payments_qs = SupplierLedger.objects.filter(
+            transaction_type='payment',
+            transaction_date__range=[start_datetime, end_datetime]
+        ).select_related('supplier')
+
+        # Calculate total outflow to suppliers from original queryset
+        total_outflow_suppliers = supplier_payments_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        outflow_by_supplier = supplier_payments_qs.values('supplier__name').annotate(
+            total=Sum('amount'),
+            payments=Count('id')
+        ).order_by('-total')
+
+        # Expenses by title (only paid expenses)
+        expenses_qs = Expense.objects.filter(
+            status='paid',
+            expense_date__range=[start_date, end_date]
+        )
+        
+        # Calculate total expenses from original queryset
+        total_expenses = expenses_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        expenses_by_title = expenses_qs.values('title').annotate(
+            total=Sum('amount'),
+            count=Count('id')
+        ).order_by('-total')
+
+        net_flow = total_inflow - (total_outflow_suppliers + total_expenses)
+
+        context.update({
+            'start_date': start_date,
+            'end_date': end_date,
+            'inflow_by_customer': inflow_by_customer,
+            'outflow_by_supplier': outflow_by_supplier,
+            'expenses_by_title': expenses_by_title,
+            'total_inflow': total_inflow,
+            'total_outflow_suppliers': total_outflow_suppliers,
+            'total_expenses': total_expenses,
+            'net_flow': net_flow,
+            **get_company_info(),
+        })
+        return context
+
+
+@login_required
+def download_financial_flow_pdf(request):
+    """
+    Download the financial inflow/outflow report as a PDF file.
+    """
+    from django.template.loader import get_template
+    from core.utils import get_company_info
+    
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    # Parse dates with better error handling
+    try:
+        start_date = parse_date(start_date_str) if start_date_str else (timezone.now() - timedelta(days=30)).date()
+        end_date = parse_date(end_date_str) if end_date_str else timezone.now().date()
+        
+        # Validate dates
+        if start_date is None:
+            start_date = (timezone.now() - timedelta(days=30)).date()
+        if end_date is None:
+            end_date = timezone.now().date()
+    except (ValueError, TypeError):
+        # Fallback to default dates if parsing fails
+        start_date = (timezone.now() - timedelta(days=30)).date()
+        end_date = timezone.now().date()
+
+    # Convert dates to datetime for ledger queries
+    from datetime import datetime as dt
+    try:
+        start_datetime = timezone.make_aware(dt.combine(start_date, dt.min.time()))
+        end_datetime = timezone.make_aware(dt.combine(end_date, dt.max.time()))
+    except (ValueError, TypeError) as e:
+        # If date conversion fails, redirect back with error
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        messages.error(request, f"Invalid date format. Please try again.")
+        return redirect('reports:financial_flow')
+
+    # Inflow: Cash/Bank received from customers
+    customer_payments_qs = CustomerLedger.objects.filter(
+        transaction_type='payment',
+        transaction_date__range=[start_datetime, end_datetime]
+    ).select_related('customer')
+
+    total_inflow = customer_payments_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    inflow_by_customer = customer_payments_qs.values('customer__name').annotate(
+        total=Sum('amount'),
+        payments=Count('id')
+    ).order_by('-total')
+
+    # Outflow: Cash/Bank paid to suppliers
+    supplier_payments_qs = SupplierLedger.objects.filter(
+        transaction_type='payment',
+        transaction_date__range=[start_datetime, end_datetime]
+    ).select_related('supplier')
+
+    total_outflow_suppliers = supplier_payments_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    outflow_by_supplier = supplier_payments_qs.values('supplier__name').annotate(
+        total=Sum('amount'),
+        payments=Count('id')
+    ).order_by('-total')
+
+    # Expenses by title (only paid expenses)
+    expenses_qs = Expense.objects.filter(
+        status='paid',
+        expense_date__range=[start_date, end_date]
+    )
+    
+    total_expenses = expenses_qs.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    expenses_by_title = expenses_qs.values('title').annotate(
+        total=Sum('amount'),
+        count=Count('id')
+    ).order_by('-total')
+
+    net_flow = total_inflow - (total_outflow_suppliers + total_expenses)
+
+    template = get_template('reports/financial_flow_pdf.html')
+    context = {
+        'start_date': start_date,
+        'end_date': end_date,
+        'inflow_by_customer': inflow_by_customer,
+        'outflow_by_supplier': outflow_by_supplier,
+        'expenses_by_title': expenses_by_title,
+        'total_inflow': total_inflow,
+        'total_outflow_suppliers': total_outflow_suppliers,
+        'total_expenses': total_expenses,
+        'net_flow': net_flow,
+        **get_company_info(),
+    }
+    html = template.render(context)
+
+    # Try to generate PDF using weasyprint, fallback to HTML if not available
+    try:
+        from weasyprint import HTML
+        from io import BytesIO
+        
+        pdf_file = BytesIO()
+        HTML(string=html).write_pdf(pdf_file)
+        pdf_file.seek(0)
+        
+        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="financial_flow_report_{start_date}_to_{end_date}.pdf"'
+        return response
+    except ImportError:
+        # If weasyprint is not installed, return HTML with instructions
+        from django.contrib import messages
+        messages.warning(request, "PDF generation requires weasyprint. Install it with: pip install weasyprint")
+        response = HttpResponse(html, content_type='text/html')
+        response['Content-Disposition'] = f'attachment; filename="financial_flow_report_{start_date}_to_{end_date}.html"'
+        return response
+    except Exception as e:
+        # If PDF generation fails, return HTML
+        from django.contrib import messages
+        messages.warning(request, f"PDF generation failed: {str(e)}. Returning HTML instead.")
+        response = HttpResponse(html, content_type='text/html')
+        response['Content-Disposition'] = f'attachment; filename="financial_flow_report_{start_date}_to_{end_date}.html"'
+        return response
 
 
 # ==================== CSV DOWNLOAD VIEWS ====================
