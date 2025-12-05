@@ -15,7 +15,7 @@ import csv
 from django.utils.dateparse import parse_date
 
 from .models import ReportLog
-from sales.models import SalesOrder
+from sales.models import SalesOrder, SalesOrderItem
 from purchases.models import PurchaseOrder, GoodsReceipt
 from stock.models import Product
 from customers.models import Customer, CustomerLedger
@@ -121,7 +121,7 @@ class SalesReportEnhancedView(LoginRequiredMixin, ListView):
 
 
 class TopSellingProductsReportView(LoginRequiredMixin, ListView):
-    """Top Selling Products Report with time range filtering and CSV download"""
+    """Product-Specific Sales Report ordered by sales revenue"""
     model = Product
     template_name = 'reports/top_selling_products.html'
     context_object_name = 'top_products'
@@ -148,58 +148,94 @@ class TopSellingProductsReportView(LoginRequiredMixin, ListView):
         else:
             end_date = timezone.now().date()
         
-        # Get sales orders in date range
+        # Get sales orders in date range (only delivered orders)
         sales_orders = SalesOrder.objects.filter(
             order_date__range=[start_date, end_date],
             status='delivered'
-        ).prefetch_related('items__product')
+        ).prefetch_related('items__product', 'items__product__category', 'items__product__brand', 'items__product__unit_type')
         
-        # Calculate top selling products
-        top_products = []
+        # Calculate product-specific sales data
+        product_sales = {}
         for order in sales_orders:
             for item in order.items.all():
-                product_name = item.product.name
-                product_brand = item.product.brand.name if item.product.brand else "No Brand"
-                product_category = item.product.category.name if item.product.category else "No Category"
-                existing = next((p for p in top_products if p['product_name'] == product_name), None)
-                if existing:
-                    existing['total_quantity'] += float(item.quantity)
-                    existing['total_value'] += float(item.total_price)
-                    existing['order_count'] += 1
-                else:
-                    top_products.append({
-                        'product_name': product_name,
-                        'product_brand': product_brand,
-                        'product_category': product_category,
-                        'total_quantity': float(item.quantity),
-                        'total_value': float(item.total_price),
-                        'order_count': 1,
-                        'average_price': float(item.unit_price),
-                    })
+                product = item.product
+                product_id = product.id
+                
+                if product_id not in product_sales:
+                    product_sales[product_id] = {
+                        'product': product,
+                        'product_id': product_id,
+                        'product_name': product.name,
+                        'product_brand': product.brand.name if product.brand else "No Brand",
+                        'product_category': product.category.name if product.category else "No Category",
+                        'unit_type': product.unit_type.name if product.unit_type else (product.unit_type.code if product.unit_type else "N/A"),
+                        'total_quantity': Decimal('0'),
+                        'total_revenue': Decimal('0'),  # Sales revenue
+                        'order_count': 0,
+                        'total_items': 0,  # Total number of line items
+                        'min_price': item.unit_price,
+                        'max_price': item.unit_price,
+                        'price_sum': Decimal('0'),
+                    }
+                
+                # Update product sales data
+                product_sales[product_id]['total_quantity'] += item.quantity
+                product_sales[product_id]['total_revenue'] += item.total_price
+                product_sales[product_id]['order_count'] += 1
+                product_sales[product_id]['total_items'] += 1
+                product_sales[product_id]['price_sum'] += item.unit_price
+                
+                # Track min/max prices
+                if item.unit_price < product_sales[product_id]['min_price']:
+                    product_sales[product_id]['min_price'] = item.unit_price
+                if item.unit_price > product_sales[product_id]['max_price']:
+                    product_sales[product_id]['max_price'] = item.unit_price
         
-        # Sort by total value
-        top_products.sort(key=lambda x: x['total_value'], reverse=True)
+        # Convert to list and calculate averages
+        product_list = []
+        for product_id, data in product_sales.items():
+            data['average_price'] = data['price_sum'] / data['total_items'] if data['total_items'] > 0 else Decimal('0')
+            # Convert Decimal to float for template rendering
+            product_list.append({
+                'product': data['product'],
+                'product_id': data['product_id'],
+                'product_name': data['product_name'],
+                'product_brand': data['product_brand'],
+                'product_category': data['product_category'],
+                'unit_type': data['unit_type'],
+                'total_quantity': float(data['total_quantity']),
+                'total_revenue': float(data['total_revenue']),  # Sales revenue
+                'order_count': data['order_count'],
+                'total_items': data['total_items'],
+                'average_price': float(data['average_price']),
+                'min_price': float(data['min_price']),
+                'max_price': float(data['max_price']),
+            })
+        
+        # Sort by total revenue (sales revenue) in descending order
+        product_list.sort(key=lambda x: x['total_revenue'], reverse=True)
         
         # Calculate summary metrics
-        total_products_sold = len(top_products)
-        total_quantity_sold = sum(p['total_quantity'] for p in top_products)
-        total_value_sold = sum(p['total_value'] for p in top_products)
-        average_price = total_value_sold / total_quantity_sold if total_quantity_sold > 0 else 0
+        total_products_sold = len(product_list)
+        total_quantity_sold = sum(p['total_quantity'] for p in product_list)
+        total_revenue = sum(p['total_revenue'] for p in product_list)
+        average_price = total_revenue / total_quantity_sold if total_quantity_sold > 0 else 0
         
         context.update({
             'start_date': start_date,
             'end_date': end_date,
-            'top_products': top_products[:20],  # Top 20 products
+            'top_products': product_list,  # All products ordered by revenue
             'total_products_sold': total_products_sold,
             'total_quantity_sold': total_quantity_sold,
-            'total_value_sold': total_value_sold,
+            'total_value_sold': total_revenue,  # Keep for backward compatibility
+            'total_revenue': total_revenue,  # New field name
             'average_price': average_price,
         })
         return context
 
 
 class TopSellingCustomersReportView(LoginRequiredMixin, ListView):
-    """Top Selling Customers Report with time range filtering and CSV download"""
+    """Customer-specific sales report ordered by sales revenue"""
     model = Customer
     template_name = 'reports/top_selling_customers.html'
     context_object_name = 'top_customers'
@@ -216,54 +252,69 @@ class TopSellingCustomersReportView(LoginRequiredMixin, ListView):
         end_date_str = self.request.GET.get('end_date')
         
         # Default to last 30 days if no dates provided
-        if start_date_str:
-            start_date = parse_date(start_date_str)
-        else:
-            start_date = (timezone.now() - timedelta(days=30)).date()
-            
-        if end_date_str:
-            end_date = parse_date(end_date_str)
-        else:
-            end_date = timezone.now().date()
+        start_date = parse_date(start_date_str) if start_date_str else (timezone.now() - timedelta(days=30)).date()
+        end_date = parse_date(end_date_str) if end_date_str else timezone.now().date()
         
-        # Get sales orders in date range
+        # Delivered sales orders in range
         sales_orders = SalesOrder.objects.filter(
             order_date__range=[start_date, end_date],
             status='delivered'
         ).select_related('customer')
         
-        # Calculate top customers
-        top_customers = []
+        # Aggregate by customer (by id)
+        customer_sales = {}
         for order in sales_orders:
-            if order.customer:
-                customer_name = order.customer.name
-                existing = next((c for c in top_customers if c['customer_name'] == customer_name), None)
-                if existing:
-                    existing['total_orders'] += 1
-                    existing['total_value'] += float(order.total_amount)
-                else:
-                    top_customers.append({
-                        'customer_name': customer_name,
-                        'total_orders': 1,
-                        'total_value': float(order.total_amount),
-                    })
+            if not order.customer:
+                continue  # skip anonymous for this report
+            cust = order.customer
+            cust_id = cust.id
+            if cust_id not in customer_sales:
+                customer_sales[cust_id] = {
+                    'customer': cust,
+                    'customer_id': cust_id,
+                    'customer_name': cust.name,
+                    'customer_type': cust.customer_type,
+                    'total_orders': 0,
+                    'total_revenue': Decimal('0'),
+                    'last_order_date': None,
+                }
+            customer_sales[cust_id]['total_orders'] += 1
+            customer_sales[cust_id]['total_revenue'] += order.total_amount
+            if (not customer_sales[cust_id]['last_order_date']) or (order.order_date > customer_sales[cust_id]['last_order_date']):
+                customer_sales[cust_id]['last_order_date'] = order.order_date
         
-        # Sort by total value
-        top_customers.sort(key=lambda x: x['total_value'], reverse=True)
+        # Build list and compute averages
+        customer_list = []
+        for cust_id, data in customer_sales.items():
+            avg_order = data['total_revenue'] / data['total_orders'] if data['total_orders'] > 0 else Decimal('0')
+            customer_list.append({
+                'customer': data['customer'],
+                'customer_id': data['customer_id'],
+                'customer_name': data['customer_name'],
+                'customer_type': data['customer_type'],
+                'total_orders': data['total_orders'],
+                'total_revenue': float(data['total_revenue']),
+                'average_order_value': float(avg_order),
+                'last_order_date': data['last_order_date'],
+            })
         
-        # Calculate summary metrics
-        total_customers = len(top_customers)
-        total_orders = sum(c['total_orders'] for c in top_customers)
-        total_value = sum(c['total_value'] for c in top_customers)
-        average_customer_value = total_value / total_customers if total_customers > 0 else 0
+        # Order by sales revenue desc
+        customer_list.sort(key=lambda x: x['total_revenue'], reverse=True)
+        
+        # Summary metrics
+        total_customers = len(customer_list)
+        total_orders = sum(c['total_orders'] for c in customer_list)
+        total_revenue = sum(c['total_revenue'] for c in customer_list)
+        average_customer_value = total_revenue / total_customers if total_customers > 0 else 0
         
         context.update({
             'start_date': start_date,
             'end_date': end_date,
-            'top_customers': top_customers[:20],  # Top 20 customers
+            'top_customers': customer_list,  # all ordered by revenue
             'total_customers': total_customers,
             'total_orders': total_orders,
-            'total_value': total_value,
+            'total_value': total_revenue,  # backward compat
+            'total_revenue': total_revenue,
             'average_customer_value': average_customer_value,
         })
         return context
@@ -378,12 +429,16 @@ class ProfitLossReportView(LoginRequiredMixin, ListView):
                 order_date__range=[start_date, end_date]
             ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
             
-            # Cost of Goods Sold (COGS) - Goods receipts that are received
-            from purchases.models import GoodsReceipt
-            cost_of_goods_sold = GoodsReceipt.objects.filter(
-                status='received',
-                receipt_date__range=[start_date, end_date]
-            ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+            # Cost of Goods Sold (COGS) - cost of products actually sold in the period
+            delivered_items = SalesOrderItem.objects.filter(
+                sales_order__status='delivered',
+                sales_order__order_date__range=[start_date, end_date]
+            ).select_related('product', 'sales_order')
+            
+            cost_of_goods_sold = Decimal('0')
+            for item in delivered_items:
+                unit_cost = item.product.cost_price or Decimal('0')
+                cost_of_goods_sold += (unit_cost * item.quantity)
             
             # Operating Expenses
             operating_expenses = Expense.objects.filter(
@@ -424,10 +479,15 @@ class ProfitLossReportView(LoginRequiredMixin, ListView):
                 order_date__range=[previous_month_start, previous_month_end]
             ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
             
-            previous_cogs = GoodsReceipt.objects.filter(
-                status='received',
-                receipt_date__range=[previous_month_start, previous_month_end]
-            ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+            previous_items = SalesOrderItem.objects.filter(
+                sales_order__status='delivered',
+                sales_order__order_date__range=[previous_month_start, previous_month_end]
+            ).select_related('product', 'sales_order')
+            
+            previous_cogs = Decimal('0')
+            for item in previous_items:
+                unit_cost = item.product.cost_price or Decimal('0')
+                previous_cogs += (unit_cost * item.quantity)
             
             previous_expenses = Expense.objects.filter(
                 expense_date__range=[previous_month_start, previous_month_end]

@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
-{% block title %}Top Selling Customers Report{% endblock %}
+{% block title %}Customer Sales Report{% endblock %}
 
-{% block page_title %}Top Selling Customers Report{% endblock %}
-{% block page_description %}Analysis of best performing customers with time range filtering{% endblock %}
+{% block page_title %}Customer Sales Report{% endblock %}
+{% block page_description %}Customer-specific sales ordered by sales revenue{% endblock %}
 
 {% block page_actions %}
 <div class="btn-group">
@@ -76,8 +76,8 @@
             <div class="icon info">
                 <i class="bi bi-currency-dollar"></i>
             </div>
-            <h3 style="color: var(--info-color);">৳{{ total_value|floatformat:0 }}</h3>
-            <p>Total Value</p>
+            <h3 style="color: var(--info-color);">৳{{ total_revenue|floatformat:0 }}</h3>
+            <p>Total Sales Revenue</p>
             <small class="text-info">Revenue generated</small>
         </div>
     </div>
@@ -94,23 +94,6 @@
     </div>
 </div>
 
-<!-- Top Customers Chart -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-bar-chart"></i>
-                    Top 10 Customers by Value
-                </h5>
-            </div>
-            <div class="card-body">
-                <canvas id="customersChart" width="400" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Top Customers Table -->
 <div class="row">
     <div class="col-md-12">
@@ -118,7 +101,7 @@
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="bi bi-list-ol"></i>
-                    Top Customers Ranking
+                    Customer Sales Ranking (Ordered by Sales Revenue)
                 </h5>
             </div>
             <div class="card-body">
@@ -128,11 +111,11 @@
                             <tr>
                                 <th>Rank</th>
                                 <th>Customer Name</th>
-                                <th>Customer Type</th>
-                                <th>Total Orders</th>
-                                <th>Total Value</th>
-                                <th>Avg. Order Value</th>
-                                <th>Last Order</th>
+                                <th>Type</th>
+                                <th class="text-end">Orders</th>
+                                <th class="text-end">Sales Revenue</th>
+                                <th class="text-end">Avg. Order Value</th>
+                                <th class="text-end">Last Order</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -145,14 +128,17 @@
                                 <td>
                                     <span class="badge bg-info">{{ customer.customer_type|title }}</span>
                                 </td>
-                                <td>{{ customer.total_orders }}</td>
-                                <td>৳{{ customer.total_value|floatformat:0 }}</td>
-                                <td>৳{{ customer.average_order_value|floatformat:0 }}</td>
-                                <td>{{ customer.last_order_date|date:"M d, Y" }}</td>
+                                <td class="text-end">{{ customer.total_orders }}</td>
+                                <td class="text-end"><strong class="text-success">৳{{ customer.total_revenue|floatformat:2 }}</strong></td>
+                                <td class="text-end">৳{{ customer.average_order_value|floatformat:2 }}</td>
+                                <td class="text-end">{{ customer.last_order_date|date:"M d, Y" }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="7" class="text-center text-muted">No customers found in the selected period</td>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                    <p class="mt-2 mb-0">No customers found in the selected period</p>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -180,7 +166,7 @@ new Chart(customersCtx, {
             label: 'Sales Value (৳)',
             data: [
                 {% for customer in top_customers|slice:":10" %}
-                    {{ customer.total_value }}{% if not forloop.last %},{% endif %}
+                    {{ customer.total_revenue }}{% if not forloop.last %},{% endif %}
                 {% endfor %}
             ],
             backgroundColor: 'rgba(40, 167, 69, 0.8)',
