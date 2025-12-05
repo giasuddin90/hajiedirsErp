@@ -62,10 +62,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         ).aggregate(total=Sum('amount'))['total'] or 0
         context['total_expenses'] = monthly_expenses
         
-        # Purchase metrics
-        monthly_purchases = PurchaseOrder.objects.filter(
-            status='goods-received',
-            order_date__gte=this_month_start
+        # Purchase metrics - use GoodsReceipt instead of PurchaseOrder status
+        from purchases.models import GoodsReceipt
+        monthly_purchases = GoodsReceipt.objects.filter(
+            status='received',
+            receipt_date__gte=this_month_start
         ).aggregate(total=Sum('total_amount'))['total'] or 0
         
         context['total_purchases'] = monthly_purchases

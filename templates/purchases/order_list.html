@@ -51,7 +51,7 @@
                                 <td>{{ order.order_date|date:"M d, Y" }}</td>
                                 <td>৳{{ order.total_amount|floatformat:2 }}</td>
                                 <td>
-                                    <span class="badge {% if order.status == 'pending' %}bg-warning{% elif order.status == 'confirmed' %}bg-info{% elif order.status == 'received' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    <span class="badge {% if order.status == 'purchase-order' %}bg-info{% elif order.status == 'canceled' %}bg-danger{% else %}bg-secondary{% endif %}">
                                         {{ order.get_status_display }}
                                     </span>
                                 </td>

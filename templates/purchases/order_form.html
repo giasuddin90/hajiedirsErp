@@ -59,7 +59,7 @@
                             <div class="form-text">
                                 <small class="text-muted">
                                     <i class="bi bi-info-circle"></i> 
-                                    Changing status to "Goods Received" will automatically update inventory. Cancelling will reverse inventory changes.
+                                    Use Goods Receipts to receive goods. Cancelling will mark the order as canceled.
                                 </small>
                             </div>
                         </div>
@@ -489,22 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.addEventListener('change', function(e) {
         if (e.target.name === 'status') {
-            if (e.target.value === 'goods-received') {
-                selectedNewStatus = 'goods-received';
-                showStatusChangeModal(e.target, {
-                    title: 'Mark as Goods Received',
-                    icon: 'bi-truck',
-                    iconColor: 'text-success',
-                    message: 'Are you sure you want to mark this order as "Goods Received"?',
-                    details: [
-                        '✅ Update inventory levels (increase stock)',
-                        '✅ Mark order as received',
-                        '✅ Complete the purchase process'
-                    ],
-                    confirmText: 'Mark as Received',
-                    confirmClass: 'btn-success'
-                });
-            } else if (e.target.value === 'canceled') {
+            if (e.target.value === 'canceled') {
                 selectedNewStatus = 'canceled';
                 showStatusChangeModal(e.target, {
                     title: 'Cancel Purchase Order',

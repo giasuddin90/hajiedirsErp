@@ -10,7 +10,6 @@ from datetime import datetime
 class PurchaseOrder(models.Model):
     ORDER_STATUS = [
         ('purchase-order', 'Purchase Order'),
-        ('goods-received', 'Goods Received'),
         ('canceled', 'Canceled'),
     ]
     
@@ -46,21 +45,14 @@ class PurchaseOrder(models.Model):
 
     def update_inventory_on_status_change(self, old_status, new_status, user=None):
         """
-        Inventory is now calculated in real-time from transaction status.
+        Inventory is now calculated in real-time from GoodsReceipt items.
         No need to update pre-calculated stock - inventory increases automatically
-        when status changes to 'goods-received' and decreases when cancelled.
+        when goods receipts are confirmed.
         """
         # Real-time inventory calculation is handled by Product.get_realtime_quantity()
-        # which sums purchase orders with status='goods-received' and subtracts sales.
-        # No action needed here - inventory updates automatically based on status.
+        # which sums GoodsReceiptItem with status='received' and subtracts sales.
+        # No action needed here - inventory updates automatically based on goods receipts.
         pass
-    
-    def receive_goods(self, user=None):
-        """Receive goods and update inventory (legacy method for compatibility)"""
-        old_status = self.status
-        self.status = 'goods-received'
-        self.save()
-        self.update_inventory_on_status_change(old_status, 'goods-received', user)
     
     def cancel_order(self, user=None):
         """Cancel the purchase order"""

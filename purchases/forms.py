@@ -48,7 +48,6 @@ class PurchaseOrderForm(forms.ModelForm):
         self.fields['supplier'].queryset = Supplier.objects.filter(is_active=True)
         self.fields['status'].choices = [
             ('purchase-order', 'Purchase Order'),
-            ('goods-received', 'Goods Received'),
             ('canceled', 'Canceled'),
         ]
         
@@ -199,7 +198,7 @@ class GoodsReceiptForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Only show purchase orders that are not canceled
         self.fields['purchase_order'].queryset = PurchaseOrder.objects.filter(
-            status__in=['purchase-order', 'goods-received']
+            status='purchase-order'
         ).order_by('-order_date')
         # Add data attribute for JavaScript
         self.fields['purchase_order'].widget.attrs['id'] = 'id_purchase_order'

@@ -150,15 +150,15 @@ class Product(models.Model):
         """Calculate total stock value using real-time quantity"""
         try:
             quantity = self.get_realtime_quantity()
-            # Use average unit cost from recent purchases if available
-            from purchases.models import PurchaseOrderItem
-            recent_purchases = PurchaseOrderItem.objects.filter(
+            # Use average unit cost from recent goods receipts if available
+            from purchases.models import GoodsReceiptItem
+            recent_receipts = GoodsReceiptItem.objects.filter(
                 product=self,
-                purchase_order__status='goods-received'
-            ).order_by('-purchase_order__order_date')[:1]
+                goods_receipt__status='received'
+            ).order_by('-goods_receipt__receipt_date')[:1]
             
-            if recent_purchases.exists():
-                unit_cost = recent_purchases.first().unit_price
+            if recent_receipts.exists():
+                unit_cost = recent_receipts.first().unit_cost
             else:
                 unit_cost = self.cost_price
             

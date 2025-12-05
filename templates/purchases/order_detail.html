@@ -57,7 +57,7 @@
                             <tr>
                                 <td><strong>Status:</strong></td>
                                 <td>
-                                    <span class="badge {% if object.status == 'pending' %}bg-warning{% elif object.status == 'confirmed' %}bg-info{% elif object.status == 'received' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    <span class="badge {% if object.status == 'purchase-order' %}bg-info{% elif object.status == 'canceled' %}bg-danger{% else %}bg-secondary{% endif %}">
                                         {{ object.get_status_display }}
                                     </span>
                                 </td>

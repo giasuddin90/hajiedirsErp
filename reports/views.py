@@ -375,10 +375,11 @@ class ProfitLossReportView(LoginRequiredMixin, ListView):
                 order_date__range=[start_date, end_date]
             ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
             
-            # Cost of Goods Sold (COGS) - Purchase orders for goods received
-            cost_of_goods_sold = PurchaseOrder.objects.filter(
-                status='goods-received',
-                order_date__range=[start_date, end_date]
+            # Cost of Goods Sold (COGS) - Goods receipts that are received
+            from purchases.models import GoodsReceipt
+            cost_of_goods_sold = GoodsReceipt.objects.filter(
+                status='received',
+                receipt_date__range=[start_date, end_date]
             ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
             
             # Operating Expenses
@@ -420,9 +421,9 @@ class ProfitLossReportView(LoginRequiredMixin, ListView):
                 order_date__range=[previous_month_start, previous_month_end]
             ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
             
-            previous_cogs = PurchaseOrder.objects.filter(
-                status='goods-received',
-                order_date__range=[previous_month_start, previous_month_end]
+            previous_cogs = GoodsReceipt.objects.filter(
+                status='received',
+                receipt_date__range=[previous_month_start, previous_month_end]
             ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
             
             previous_expenses = Expense.objects.filter(
@@ -719,9 +720,10 @@ def download_profit_loss_csv(request):
         order_date__range=[start_date, end_date]
     ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
     
-    cost_of_goods_sold = PurchaseOrder.objects.filter(
-        status='goods-received',
-        order_date__range=[start_date, end_date]
+    from purchases.models import GoodsReceipt
+    cost_of_goods_sold = GoodsReceipt.objects.filter(
+        status='received',
+        receipt_date__range=[start_date, end_date]
     ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
     
     operating_expenses = Expense.objects.filter(

@@ -163,10 +163,8 @@ class PurchaseOrderUpdateView(UpdateView):
                 
                 # Show appropriate success message
                 if old_status != new_status:
-                    if new_status == 'goods-received':
-                        messages.success(self.request, f'✅ Purchase Order {self.object.order_number} marked as received! Inventory updated.')
-                    elif new_status == 'canceled':
-                        messages.success(self.request, f'✅ Purchase Order {self.object.order_number} cancelled! Inventory adjusted.')
+                    if new_status == 'canceled':
+                        messages.success(self.request, f'✅ Purchase Order {self.object.order_number} cancelled!')
                     else:
                         messages.success(self.request, f'✅ Purchase Order {self.object.order_number} updated successfully!')
                 else:
