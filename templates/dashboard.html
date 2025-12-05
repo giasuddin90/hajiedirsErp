@@ -17,8 +17,9 @@
 {% endblock %}
 
 {% block content %}
-<!-- Financial KPI Cards -->
+<!-- Dashboard KPI Cards -->
 <div class="row mb-4">
+    <!-- Monthly Revenue -->
     <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="100">
         <div class="stats-card success">
             <div class="icon success">
@@ -32,6 +33,7 @@
         </div>
     </div>
     
+    <!-- Total Receivables -->
     <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="200">
         <div class="stats-card info">
             <div class="icon info">
@@ -43,6 +45,7 @@
         </div>
     </div>
     
+    <!-- Total Payables -->
     <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="300">
         <div class="stats-card warning">
             <div class="icon warning">
@@ -54,6 +57,7 @@
         </div>
     </div>
     
+    <!-- Total Expenses -->
     <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="400">
         <div class="stats-card danger">
             <div class="icon danger">
@@ -64,10 +68,8 @@
             <small class="text-danger">Monthly expenses</small>
         </div>
     </div>
-</div>
-
-<!-- Business Intelligence Cards -->
-<div class="row mb-4">
+    
+    <!-- Active Customers -->
     <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="100">
         <div class="stats-card primary">
             <div class="icon primary">
@@ -79,6 +81,7 @@
         </div>
     </div>
     
+    <!-- Active Suppliers -->
     <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="200">
         <div class="stats-card secondary">
             <div class="icon secondary">
@@ -90,6 +93,7 @@
         </div>
     </div>
     
+    <!-- Product Catalog -->
     <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="300">
         <div class="stats-card dark">
             <div class="icon dark">
@@ -101,13 +105,14 @@
         </div>
     </div>
     
+    <!-- Profit Margin -->
     <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="400">
         <div class="stats-card {% if profit_margin >= 0 %}success{% else %}danger{% endif %}">
             <div class="icon {% if profit_margin >= 0 %}success{% else %}danger{% endif %}">
                 <i class="bi bi-graph-up-arrow"></i>
             </div>
             <h3 style="color: {% if profit_margin >= 0 %}var(--success-color){% else %}var(--danger-color){% endif %};">
-                {{ profit_margin|default:0 }}%
+                {{ profit_margin|default:0|floatformat:2 }}%
             </h3>
             <p>Profit Margin</p>
             <small class="{% if profit_margin >= 0 %}text-success{% else %}text-danger{% endif %}">
