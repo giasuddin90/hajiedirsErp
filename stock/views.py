@@ -13,7 +13,7 @@ from .forms import (
     ProductSearchForm, StockReportForm
 )
 from sales.models import SalesOrderItem
-from purchases.models import PurchaseOrderItem
+from purchases.models import PurchaseOrderItem, GoodsReceiptItem
 
 
 
@@ -116,11 +116,56 @@ class StockListView(ListView):
     context_object_name = 'products'
     
     def get_queryset(self):
-        return Product.objects.filter(is_active=True).select_related('category', 'brand')
+        queryset = Product.objects.filter(is_active=True).select_related('category', 'brand', 'unit_type')
+        
+        # Filter by product name
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        
+        return queryset
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         products = self.get_queryset()
+        
+        # Get selected warehouse filter
+        warehouse_id = self.request.GET.get('warehouse')
+        selected_warehouse = None
+        if warehouse_id:
+            try:
+                selected_warehouse = Warehouse.objects.get(pk=warehouse_id, is_active=True)
+            except Warehouse.DoesNotExist:
+                pass
+        
+        # Get all active warehouses for filter dropdown
+        warehouses = Warehouse.objects.filter(is_active=True).order_by('name')
+        
+        # Calculate warehouse summary (how many products in each warehouse)
+        warehouse_summary = []
+        
+        for warehouse in warehouses:
+            # Count products that have stock in this warehouse
+            products_in_warehouse = GoodsReceiptItem.objects.filter(
+                warehouse=warehouse,
+                goods_receipt__status='received'
+            ).values('product').distinct().count()
+            
+            # Calculate total quantity and value in this warehouse using aggregation
+            warehouse_aggregates = GoodsReceiptItem.objects.filter(
+                warehouse=warehouse,
+                goods_receipt__status='received'
+            ).aggregate(
+                total_qty=Sum('quantity'),
+                total_value=Sum('total_cost')
+            )
+            
+            warehouse_summary.append({
+                'warehouse': warehouse,
+                'product_count': products_in_warehouse,
+                'total_quantity': warehouse_aggregates['total_qty'] or Decimal('0'),
+                'total_value': warehouse_aggregates['total_value'] or Decimal('0'),
+            })
         
         # Calculate summary statistics using real-time inventory
         stock_data = []
@@ -131,26 +176,61 @@ class StockListView(ListView):
         total_stock_value = Decimal('0')
         
         for product in products:
-            qty = product.get_realtime_quantity()
+            # Get quantity for selected warehouse or total
+            if selected_warehouse:
+                qty = product.get_realtime_quantity(warehouse=selected_warehouse)
+            else:
+                qty = product.get_realtime_quantity()
+            
+            # Skip products with zero quantity if warehouse is selected
+            if selected_warehouse and qty <= 0:
+                continue
+            
             total_products += 1
             
             # Calculate total stock value
-            total_stock_value += product.get_total_stock_value()
+            if selected_warehouse:
+                # Calculate value for this warehouse only
+                warehouse_items = GoodsReceiptItem.objects.filter(
+                    product=product,
+                    warehouse=selected_warehouse,
+                    goods_receipt__status='received'
+                )
+                product_value = sum(item.total_cost for item in warehouse_items)
+            else:
+                product_value = product.get_total_stock_value()
+            
+            total_stock_value += product_value
             
             if qty <= 0:
                 out_of_stock += 1
                 status = 'out_of_stock'
-            elif qty <= product.min_stock_level:
+            elif qty <= product.min_stock_level and product.min_stock_level > 0:
                 low_stock += 1
                 status = 'low_stock'
             else:
                 in_stock += 1
                 status = 'in_stock'
             
+            # Get warehouse breakdown for this product
+            warehouse_breakdown = []
+            if not selected_warehouse:
+                # Show breakdown by warehouse
+                for warehouse in warehouses:
+                    warehouse_qty = product.get_realtime_quantity(warehouse=warehouse)
+                    if warehouse_qty > 0:
+                        warehouse_breakdown.append({
+                            'warehouse': warehouse,
+                            'quantity': warehouse_qty
+                        })
+            
             stock_data.append({
                 'product': product,
                 'quantity': qty,
-                'status': status
+                'status': status,
+                'value': product_value,
+                'warehouse_breakdown': warehouse_breakdown,
+                'selected_warehouse': selected_warehouse,
             })
         
         context.update({
@@ -160,6 +240,11 @@ class StockListView(ListView):
             'low_stock': low_stock,
             'out_of_stock': out_of_stock,
             'total_stock_value': total_stock_value,
+            'warehouses': warehouses,
+            'warehouse_summary': warehouse_summary,
+            'selected_warehouse': selected_warehouse,
+            'current_search': self.request.GET.get('search', ''),
+            'current_warehouse': warehouse_id or '',
         })
         
         return context
