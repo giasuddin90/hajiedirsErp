@@ -4,8 +4,7 @@ from . import views
 app_name = 'reports'
 
 urlpatterns = [
-    # Enhanced Reports with Time Range Filtering
-    path('sales-enhanced/', views.SalesReportEnhancedView.as_view(), name='sales_report_enhanced'),
+    # Reports
     path('top-products/', views.TopSellingProductsReportView.as_view(), name='top_selling_products'),
     path('top-customers/', views.TopSellingCustomersReportView.as_view(), name='top_selling_customers'),
     path('accounts-receivable/', views.AccountsReceivableReportView.as_view(), name='accounts_receivable'),

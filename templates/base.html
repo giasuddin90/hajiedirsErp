@@ -246,11 +246,6 @@
                 <div class="collapse" id="reportsSubmenu">
                     <ul class="nav flex-column ms-3">
                         <li class="nav-item">
-                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'sales_report_enhanced' %}active{% endif %}" href="{% url 'reports:sales_report_enhanced' %}">
-                                <i class="bi bi-cart-check"></i> Sales Report
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'top_selling_products' %}active{% endif %}" href="{% url 'reports:top_selling_products' %}">
                                 <i class="bi bi-trophy"></i> Product Sales Report
                             </a>
