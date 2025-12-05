@@ -284,118 +284,11 @@
     </div>
 </div>
 
-<div class="row">
-    <!-- Low Stock Alerts -->
-    <div class="col-md-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    Low Stock Alerts
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Current Stock</th>
-                                <th>Min Level</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for alert in low_stock_alerts %}
-                            <tr>
-                                <td>{{ alert.product.name }}</td>
-                                <td class="text-danger">{{ alert.current_quantity }}</td>
-                                <td>{{ alert.min_quantity }}</td>
-                                <td>
-                                    {% if alert.current_quantity <= 0 %}
-                                        <span class="badge bg-danger">Out of Stock</span>
-                                    {% else %}
-                                        <span class="badge bg-warning">Low Stock</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">No low stock alerts</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-
-<!-- Sales Trend Chart -->
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-graph-up"></i>
-                    Sales Trend (Last 6 Months)
-                </h5>
-            </div>
-            <div class="card-body">
-                <canvas id="salesChart" width="400" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Sales Trend Chart with Real Data
-const salesCtx = document.getElementById('salesChart').getContext('2d');
-new Chart(salesCtx, {
-    type: 'line',
-    data: {
-        labels: {{ sales_trend_data.labels|safe }},
-        datasets: [{
-            label: 'Sales (৳)',
-            data: {{ sales_trend_data.data|safe }},
-            borderColor: '#28a745',
-            backgroundColor: 'rgba(40, 167, 69, 0.1)',
-            tension: 0.4,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                display: false
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return 'Sales: ৳' + context.parsed.y.toLocaleString();
-                    }
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function(value) {
-                        return '৳' + value.toLocaleString();
-                    }
-                }
-            }
-        }
-    }
-});
-
-
 // Dashboard functions
 function refreshDashboard() {
     location.reload();

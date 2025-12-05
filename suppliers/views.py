@@ -15,6 +15,31 @@ class SupplierListView(ListView):
     template_name = 'suppliers/supplier_list.html'
     context_object_name = 'suppliers'
     
+    def get_queryset(self):
+        """Filter suppliers based on search query and status"""
+        queryset = Supplier.objects.all()
+        
+        # Get filter parameters from request
+        search = self.request.GET.get('search', '').strip()
+        status = self.request.GET.get('status', '')
+        
+        # Apply search filter
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) |
+                Q(phone__icontains=search) |
+                Q(contact_person__icontains=search)
+            )
+        
+        # Apply status filter
+        if status == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        # Order by name
+        return queryset.order_by('name')
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         suppliers = self.get_queryset()
@@ -28,10 +53,13 @@ class SupplierListView(ListView):
         # Count active suppliers
         active_suppliers = suppliers.filter(is_active=True).count()
         
+        # Get current filter values for form
         context.update({
             'total_payable': total_payable,
             'total_receivable': total_receivable,
             'active_suppliers': active_suppliers,
+            'current_search': self.request.GET.get('search', ''),
+            'current_status': self.request.GET.get('status', ''),
         })
         
         return context

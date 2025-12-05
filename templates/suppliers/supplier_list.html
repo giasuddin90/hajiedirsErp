@@ -9,18 +9,47 @@
     <a href="{% url 'suppliers:supplier_create' %}" class="btn btn-primary">
         <i class="bi bi-plus-circle"></i> Add Supplier
     </a>
-    <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-        <i class="bi bi-funnel"></i> Filter
-    </button>
-    <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="#">All Suppliers</a></li>
-        <li><a class="dropdown-item" href="#">Active Only</a></li>
-        <li><a class="dropdown-item" href="#">Inactive Only</a></li>
-    </ul>
 </div>
 {% endblock %}
 
 {% block content %}
+<!-- Filter Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="get" action="{% url 'suppliers:supplier_list' %}" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search" 
+                               name="search" 
+                               placeholder="Search by name, phone, or contact person..."
+                               value="{{ current_search }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Suppliers</option>
+                            <option value="active" {% if current_status == 'active' %}selected{% endif %}>Active Only</option>
+                            <option value="inactive" {% if current_status == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                        <a href="{% url 'suppliers:supplier_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Summary Cards -->
 <div class="row mb-4">
     <div class="col-md-4">

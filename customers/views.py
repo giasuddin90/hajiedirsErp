@@ -17,6 +17,25 @@ class CustomerListView(ListView):
     template_name = 'customers/customer_list.html'
     context_object_name = 'customers'
     
+    def get_queryset(self):
+        qs = Customer.objects.all()
+        # Status filter
+        status = self.request.GET.get('status')
+        if status == 'active':
+            qs = qs.filter(is_active=True)
+        elif status == 'inactive':
+            qs = qs.filter(is_active=False)
+        
+        # Search by name / phone
+        search = self.request.GET.get('search')
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search) |
+                Q(phone__icontains=search) |
+                Q(contact_person__icontains=search)
+            )
+        return qs.order_by('name')
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         customers = self.get_queryset()
@@ -29,6 +48,8 @@ class CustomerListView(ListView):
             'total_receivable': total_receivable,
             'total_payable': total_payable,
             'active_customers': active_customers,
+            'current_status': self.request.GET.get('status', ''),
+            'current_search': self.request.GET.get('search', ''),
         })
         return context
 
