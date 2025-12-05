@@ -127,9 +127,16 @@ class Product(models.Model):
             ).aggregate(total=models.Sum('quantity'))['total'] or Decimal('0')
             
             # Sum quantities from sales orders that are delivered
+            sales_filter = {
+                'product': self,
+                'sales_order__status': 'delivered'
+            }
+            if warehouse:
+                # When warehouse is specified, only count sales from that warehouse
+                sales_filter['warehouse'] = warehouse
+            
             total_sales_delivered = SalesOrderItem.objects.filter(
-                product=self,
-                sales_order__status='delivered'
+                **sales_filter
             ).aggregate(total=models.Sum('quantity'))['total'] or Decimal('0')
             
             # Simple calculation: purchase received - sales delivered

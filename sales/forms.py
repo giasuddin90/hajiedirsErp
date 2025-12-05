@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from decimal import Decimal, ROUND_HALF_UP
 from .models import SalesOrder, SalesOrderItem
 from customers.models import Customer
-from stock.models import Product, ProductCategory, ProductBrand
+from stock.models import Product, ProductCategory, ProductBrand, Warehouse
 
 
 class RoundedDecimalField(forms.DecimalField):
@@ -152,17 +152,21 @@ class SalesOrderItemForm(forms.ModelForm):
     
     class Meta:
         model = SalesOrderItem
-        fields = ['product', 'quantity', 'unit_price', 'total_price']
+        fields = ['product', 'warehouse', 'quantity', 'unit_price', 'total_price']
         widgets = {
             'product': forms.Select(attrs={'class': 'form-select product-select'}),
+            'warehouse': forms.Select(attrs={'class': 'form-select warehouse-select'}),
         }
         labels = {
             'product': 'Product',
+            'warehouse': 'Warehouse',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['product'].queryset = Product.objects.filter(is_active=True).select_related('category', 'brand')
+        self.fields['warehouse'].queryset = Warehouse.objects.filter(is_active=True).order_by('name')
+        self.fields['warehouse'].required = True
         
         # Add data attributes for JavaScript filtering
         if 'product' in self.fields:
@@ -198,8 +202,13 @@ class SalesOrderItemForm(forms.ModelForm):
             # Django formset will ignore empty forms
             return cleaned_data
         
+        warehouse = cleaned_data.get('warehouse')
         quantity = cleaned_data.get('quantity', 0)
         unit_price = cleaned_data.get('unit_price', 0)
+        
+        # Validate warehouse is selected when product is selected
+        if product and not warehouse:
+            raise forms.ValidationError('Warehouse must be selected when product is selected.')
         
         # Validate quantity and price if product is selected
         if product:
@@ -207,6 +216,14 @@ class SalesOrderItemForm(forms.ModelForm):
                 raise forms.ValidationError('Quantity must be greater than 0 when product is selected.')
             if not unit_price or unit_price <= 0:
                 raise forms.ValidationError('Unit price must be greater than 0 when product is selected.')
+            
+            # Validate available stock in warehouse
+            if warehouse:
+                available_qty = product.get_realtime_quantity(warehouse=warehouse)
+                if quantity > available_qty:
+                    raise forms.ValidationError(
+                        f'Insufficient stock in {warehouse.name}. Available: {available_qty}, Requested: {quantity}'
+                    )
         
         # Calculate total price and round to 2 decimal places
         if quantity and unit_price:
@@ -240,7 +257,7 @@ SalesOrderItemFormSet = inlineformset_factory(
     SalesOrderItem,
     form=SalesOrderItemForm,
     formset=BaseSalesOrderItemFormSet,
-    fields=['product', 'quantity', 'unit_price', 'total_price'],
+    fields=['product', 'warehouse', 'quantity', 'unit_price', 'total_price'],
     extra=0,  # No extra forms by default
     can_delete=True,
     min_num=0,  # Allow zero items initially

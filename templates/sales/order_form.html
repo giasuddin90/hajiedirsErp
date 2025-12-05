@@ -171,13 +171,24 @@
                                     </div>
                                     
                                     <!-- Product Selection -->
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label class="form-label">
                                             <i class="bi bi-box-seam"></i> Product <span class="text-danger fw-bold">*</span>
                                         </label>
                                         {{ form.product }}
                                         {% if form.product.errors %}
                                             <div class="invalid-feedback d-block">{{ form.product.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Warehouse Selection -->
+                                    <div class="col-md-2">
+                                        <label class="form-label">
+                                            <i class="bi bi-building"></i> Warehouse <span class="text-danger fw-bold">*</span>
+                                        </label>
+                                        {{ form.warehouse }}
+                                        {% if form.warehouse.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.warehouse.errors.0 }}</div>
                                         {% endif %}
                                     </div>
                                     
@@ -570,13 +581,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         calculateRowTotal(row);
                     }
                     
-                    // Show product info
+                    // Show product info and check stock
                     showProductInfo(row, product);
+                    checkAvailableStock(row);
                 }
             } else {
                 hideProductInfo(row);
             }
             
+            validateForm();
+        }
+    });
+    
+    // Warehouse selection change
+    document.addEventListener('change', function(e) {
+        if (e.target.name && e.target.name.includes('-warehouse')) {
+            const row = e.target.closest('.product-row');
+            checkAvailableStock(row);
             validateForm();
         }
     });
@@ -843,7 +864,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">
                     <i class="bi bi-box-seam"></i> Product <span class="text-danger fw-bold">*</span>
                 </label>
@@ -851,6 +872,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     <option value="">Select Product</option>
                     {% for product in products %}
                     <option value="{{ product.id }}">{{ product.name }} ({{ product.unit_type }}) - ৳{{ product.selling_price }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">
+                    <i class="bi bi-building"></i> Warehouse <span class="text-danger fw-bold">*</span>
+                </label>
+                <select class="form-select warehouse-select" name="form-0-warehouse">
+                    <option value="">Select Warehouse</option>
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -1027,6 +1059,62 @@ document.addEventListener('DOMContentLoaded', function() {
         
         infoDiv.querySelector('.product-details').textContent = details;
         infoDiv.style.display = 'block';
+    }
+    
+    function checkAvailableStock(row) {
+        const productSelect = row.querySelector('select[name$="-product"]');
+        const warehouseSelect = row.querySelector('select[name$="-warehouse"]');
+        const quantityInput = row.querySelector('input[name$="-quantity"]');
+        const infoDiv = row.querySelector('.product-info');
+        
+        if (!productSelect || !warehouseSelect || !infoDiv) return;
+        
+        const productId = productSelect.value;
+        const warehouseId = warehouseSelect.value;
+        
+        if (productId && warehouseId) {
+            // Make AJAX call to check available stock
+            fetch(`/stock/ajax/product-stock/?product_id=${productId}&warehouse_id=${warehouseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const availableQty = parseFloat(data.available_quantity) || 0;
+                        const warehouseName = data.warehouse_name || '';
+                        const currentDetails = infoDiv.querySelector('.product-details').textContent;
+                        const stockInfo = ` | Available in ${warehouseName}: ${availableQty}`;
+                        
+                        // Update or add stock info
+                        if (currentDetails.includes('Available in')) {
+                            // Replace existing stock info
+                            const baseInfo = currentDetails.split('| Available in')[0];
+                            infoDiv.querySelector('.product-details').textContent = baseInfo + stockInfo;
+                        } else {
+                            infoDiv.querySelector('.product-details').textContent = currentDetails + stockInfo;
+                        }
+                        
+                        // Highlight if quantity exceeds available stock
+                        if (quantityInput && quantityInput.value) {
+                            const requestedQty = parseFloat(quantityInput.value) || 0;
+                            if (requestedQty > availableQty) {
+                                quantityInput.classList.add('is-invalid');
+                                if (!infoDiv.querySelector('.stock-warning')) {
+                                    const warning = document.createElement('div');
+                                    warning.className = 'stock-warning text-danger small mt-1';
+                                    warning.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Insufficient stock! Available: ${availableQty}`;
+                                    infoDiv.appendChild(warning);
+                                }
+                            } else {
+                                quantityInput.classList.remove('is-invalid');
+                                const warning = infoDiv.querySelector('.stock-warning');
+                                if (warning) warning.remove();
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking stock:', error);
+                });
+        }
     }
     
     function hideProductInfo(row) {

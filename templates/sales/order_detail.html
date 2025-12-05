@@ -93,7 +93,7 @@
                 </div>
                 {% endif %}
                 
-                {% if object.orderitem_set.all %}
+                {% if object.items.all %}
                 <div class="mt-4">
                     <h6>Order Items</h6>
                     <div class="table-responsive">
@@ -101,16 +101,26 @@
                             <thead>
                                 <tr>
                                     <th>Product</th>
+                                    <th>Warehouse</th>
                                     <th>Quantity</th>
                                     <th>Unit Price</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in object.orderitem_set.all %}
+                                {% for item in object.items.all %}
                                 <tr>
                                     <td>{{ item.product.name }}</td>
-                                    <td>{{ item.quantity }} {{ item.product.unit_name }}</td>
+                                    <td>
+                                        {% if item.warehouse %}
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-building"></i> {{ item.warehouse.name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.quantity }} {{ item.product.unit_type.name|default:item.product.unit_type.code }}</td>
                                     <td>৳{{ item.unit_price|floatformat:2 }}</td>
                                     <td>৳{{ item.total_price|floatformat:2 }}</td>
                                 </tr>

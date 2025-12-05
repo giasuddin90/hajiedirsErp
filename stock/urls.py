@@ -55,5 +55,8 @@ urlpatterns = [
     path('reports/stock/', views.StockReportView.as_view(), name='stock_report'),
     path('reports/valuation/', views.StockValuationReportView.as_view(), name='stock_valuation_report'),
     
+    # AJAX endpoints
+    path('ajax/product-stock/', views.get_product_stock_ajax, name='product_stock_ajax'),
+    
     # Inventory Dashboard
 ]

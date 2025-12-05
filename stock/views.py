@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import Sum, Count, Q, F
 from django.utils import timezone
 from django.contrib import messages
+from django.http import JsonResponse
 from datetime import datetime, timedelta
 from decimal import Decimal
 from .models import ProductCategory, ProductBrand, UnitType, Product, Warehouse, get_low_stock_products
@@ -595,3 +596,34 @@ class WarehouseDeleteView(DeleteView):
         warehouse = self.get_object()
         messages.success(request, f'✅ Warehouse "{warehouse.name}" deleted successfully.')
         return super().delete(request, *args, **kwargs)
+
+
+def get_product_stock_ajax(request):
+    """AJAX endpoint to get available stock for a product in a warehouse"""
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Invalid request method'})
+    
+    product_id = request.GET.get('product_id')
+    warehouse_id = request.GET.get('warehouse_id')
+    
+    if not product_id or not warehouse_id:
+        return JsonResponse({'success': False, 'error': 'Missing product_id or warehouse_id'})
+    
+    try:
+        product = get_object_or_404(Product, pk=product_id)
+        warehouse = get_object_or_404(Warehouse, pk=warehouse_id, is_active=True)
+        
+        # Get available quantity for this product in this warehouse
+        available_quantity = product.get_realtime_quantity(warehouse=warehouse)
+        
+        return JsonResponse({
+            'success': True,
+            'available_quantity': str(available_quantity),
+            'warehouse_name': warehouse.name,
+            'product_name': product.name
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

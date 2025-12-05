@@ -14,7 +14,7 @@ from .models import (
 )
 from .forms import SalesOrderForm, SalesOrderItemFormSet, SalesOrderItemFormSetCustom, InstantSalesForm
 from customers.models import Customer, CustomerLedger
-from stock.models import Product, ProductCategory, ProductBrand
+from stock.models import Product, ProductCategory, ProductBrand, Warehouse
 from django.contrib.auth.models import User
 from core.utils import get_company_info
 import uuid
@@ -161,6 +161,7 @@ class SalesOrderCreateView(CreateView):
         context['products'] = Product.objects.filter(is_active=True).select_related('category', 'brand')
         context['categories'] = ProductCategory.objects.filter(is_active=True)
         context['brands'] = ProductBrand.objects.filter(is_active=True)
+        context['warehouses'] = Warehouse.objects.filter(is_active=True).order_by('name')
         
         return context
     
@@ -289,6 +290,7 @@ class SalesOrderUpdateView(UpdateView):
         context['products'] = Product.objects.filter(is_active=True).select_related('category', 'brand')
         context['categories'] = ProductCategory.objects.filter(is_active=True)
         context['brands'] = ProductBrand.objects.filter(is_active=True)
+        context['warehouses'] = Warehouse.objects.filter(is_active=True).order_by('name')
         
         return context
     
