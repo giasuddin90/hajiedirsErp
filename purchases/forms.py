@@ -1,9 +1,9 @@
 from django import forms
 from django.forms import inlineformset_factory
 from decimal import Decimal, ROUND_HALF_UP
-from .models import PurchaseOrder, PurchaseOrderItem
+from .models import PurchaseOrder, PurchaseOrderItem, GoodsReceipt, GoodsReceiptItem
 from suppliers.models import Supplier
-from stock.models import Product, ProductCategory, ProductBrand
+from stock.models import Product, ProductCategory, ProductBrand, Warehouse
 
 
 class RoundedDecimalField(forms.DecimalField):
@@ -176,3 +176,191 @@ class PurchaseOrderSearchForm(forms.Form):
             'placeholder': 'Search by order number, supplier, or status...'
         })
     )
+
+
+class GoodsReceiptForm(forms.ModelForm):
+    """Form for creating and editing goods receipts"""
+    
+    class Meta:
+        model = GoodsReceipt
+        fields = ['purchase_order', 'receipt_date', 'notes']
+        widgets = {
+            'purchase_order': forms.Select(attrs={'class': 'form-select'}),
+            'receipt_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+        labels = {
+            'purchase_order': 'Purchase Order',
+            'receipt_date': 'Receipt Date',
+            'notes': 'Notes',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show purchase orders that are not canceled
+        self.fields['purchase_order'].queryset = PurchaseOrder.objects.filter(
+            status__in=['purchase-order', 'goods-received']
+        ).order_by('-order_date')
+
+
+class GoodsReceiptItemForm(forms.ModelForm):
+    """Form for goods receipt items"""
+    
+    quantity = RoundedDecimalField(
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control quantity-input', 'step': '0.01', 'min': '0'}),
+        label='Quantity'
+    )
+    
+    unit_cost = RoundedDecimalField(
+        max_digits=15,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control cost-input', 'step': '0.01', 'min': '0'}),
+        label='Unit Cost'
+    )
+    
+    total_cost = RoundedDecimalField(
+        max_digits=15,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control total-input', 'step': '0.01', 'readonly': True}),
+        label='Total Cost',
+        required=False
+    )
+    
+    class Meta:
+        model = GoodsReceiptItem
+        fields = ['purchase_order_item', 'warehouse', 'quantity', 'unit_cost', 'total_cost']
+        widgets = {
+            'purchase_order_item': forms.Select(attrs={'class': 'form-select purchase-order-item-select'}),
+            'warehouse': forms.Select(attrs={'class': 'form-select'}),
+        }
+        labels = {
+            'purchase_order_item': 'Order Item',
+            'warehouse': 'Warehouse',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.purchase_order = kwargs.pop('purchase_order', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filter purchase order items based on the purchase order
+        if self.purchase_order:
+            self.fields['purchase_order_item'].queryset = PurchaseOrderItem.objects.filter(
+                purchase_order=self.purchase_order
+            ).select_related('product')
+        else:
+            self.fields['purchase_order_item'].queryset = PurchaseOrderItem.objects.none()
+        
+        # Filter warehouses
+        self.fields['warehouse'].queryset = Warehouse.objects.filter(is_active=True)
+        self.fields['warehouse'].required = False
+    
+    def clean_quantity(self):
+        quantity = self.cleaned_data.get('quantity')
+        if quantity is not None:
+            if quantity <= 0:
+                raise forms.ValidationError('Quantity must be greater than 0.')
+            quantity = round(quantity, 2)
+        return quantity
+    
+    def clean_unit_cost(self):
+        unit_cost = self.cleaned_data.get('unit_cost')
+        if unit_cost is not None:
+            if unit_cost <= 0:
+                raise forms.ValidationError('Unit cost must be greater than 0.')
+            unit_cost = round(unit_cost, 2)
+        return unit_cost
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        purchase_order_item = cleaned_data.get('purchase_order_item')
+        quantity = cleaned_data.get('quantity', 0)
+        unit_cost = cleaned_data.get('unit_cost', 0)
+        
+        if purchase_order_item and quantity:
+            # Check if quantity exceeds remaining quantity
+            remaining = purchase_order_item.get_remaining_quantity()
+            if quantity > remaining:
+                raise forms.ValidationError(
+                    f'Quantity cannot exceed remaining quantity ({remaining}) for this order item.'
+                )
+        
+        # Calculate total cost
+        if quantity and unit_cost:
+            total = quantity * unit_cost
+            cleaned_data['total_cost'] = round(total, 2)
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Set product from purchase order item
+        if instance.purchase_order_item:
+            instance.product = instance.purchase_order_item.product
+        
+        # Calculate total cost
+        quantity = self.cleaned_data.get('quantity', 0)
+        unit_cost = self.cleaned_data.get('unit_cost', 0)
+        instance.total_cost = round(quantity * unit_cost, 2)
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+# Base inline formset for goods receipt items (create mode - with extra forms)
+BaseGoodsReceiptItemFormSet = inlineformset_factory(
+    GoodsReceipt,
+    GoodsReceiptItem,
+    form=GoodsReceiptItemForm,
+    fields=['purchase_order_item', 'warehouse', 'quantity', 'unit_cost', 'total_cost'],
+    extra=1,
+    can_delete=True,
+    min_num=0,
+    validate_min=False,
+)
+
+# Base inline formset for goods receipt items (edit mode - no extra forms)
+BaseGoodsReceiptItemFormSetEdit = inlineformset_factory(
+    GoodsReceipt,
+    GoodsReceiptItem,
+    form=GoodsReceiptItemForm,
+    fields=['purchase_order_item', 'warehouse', 'quantity', 'unit_cost', 'total_cost'],
+    extra=0,
+    can_delete=True,
+    min_num=0,
+    validate_min=False,
+)
+
+
+# Custom formset class to pass purchase_order to forms (create mode)
+class GoodsReceiptItemFormSet(BaseGoodsReceiptItemFormSet):
+    def __init__(self, *args, **kwargs):
+        self.purchase_order = kwargs.pop('purchase_order', None)
+        super().__init__(*args, **kwargs)
+        
+        # Pass purchase_order to each form
+        for form in self.forms:
+            form.purchase_order = self.purchase_order
+    
+    def _construct_form(self, i, **kwargs):
+        form = super()._construct_form(i, **kwargs)
+        form.purchase_order = self.purchase_order
+        return form
+
+
+# Custom formset class to pass purchase_order to forms (edit mode)
+class GoodsReceiptItemFormSetEdit(BaseGoodsReceiptItemFormSetEdit):
+    def __init__(self, *args, **kwargs):
+        self.purchase_order = kwargs.pop('purchase_order', None)
+        super().__init__(*args, **kwargs)
+        
+        # Pass purchase_order to each form
+        for form in self.forms:
+            form.purchase_order = self.purchase_order
+    
+    def _construct_form(self, i, **kwargs):
+        form = super()._construct_form(i, **kwargs)
+        form.purchase_order = self.purchase_order
+        return form

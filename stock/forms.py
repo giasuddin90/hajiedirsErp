@@ -1,6 +1,31 @@
 from django import forms
 from django.utils import timezone
-from .models import Product, ProductCategory, ProductBrand, UnitType
+from .models import Product, ProductCategory, ProductBrand, UnitType, Warehouse
+
+
+class WarehouseForm(forms.ModelForm):
+    """Form for creating and editing warehouses"""
+    
+    class Meta:
+        model = Warehouse
+        fields = ['name', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter warehouse name'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            })
+        }
+        labels = {
+            'name': 'Warehouse Name',
+            'is_active': 'Active'
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].required = True
 
 
 class ProductCategoryForm(forms.ModelForm):

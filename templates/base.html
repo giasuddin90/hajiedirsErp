@@ -149,6 +149,13 @@
                                 <i class="bi bi-boxes"></i> Stock Levels
                             </a>
                         </li>
+                        
+                        <!-- Warehouses Section -->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'stock' and request.resolver_match.url_name == 'warehouse_list' %}active{% endif %}" href="{% url 'stock:warehouse_list' %}">
+                                <i class="bi bi-building"></i> Warehouses
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>
@@ -196,10 +203,16 @@
                                 <i class="bi bi-plus-circle"></i> New Order
                             </a>
                         </li>
-                        <!-- Goods Receipts removed - simplified to use only Purchase Orders -->
-                        <!-- Purchase Invoices removed - simplified to Purchase Orders only -->
-                        <!-- Purchase Payments removed - simplified flow -->
-                        <!-- Purchase Returns removed - simplified flow -->
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'receipt_list' %}active{% endif %}" href="{% url 'purchases:receipt_list' %}">
+                                <i class="bi bi-box-arrow-in-down"></i> Goods Receipts
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'receipt_create' %}active{% endif %}" href="{% url 'purchases:receipt_create' %}">
+                                <i class="bi bi-plus-circle"></i> New Receipt
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>

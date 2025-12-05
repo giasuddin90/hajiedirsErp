@@ -7,9 +7,9 @@ from django.utils import timezone
 from django.contrib import messages
 from datetime import datetime, timedelta
 from decimal import Decimal
-from .models import ProductCategory, ProductBrand, UnitType, Product, get_low_stock_products
+from .models import ProductCategory, ProductBrand, UnitType, Product, Warehouse, get_low_stock_products
 from .forms import (
-    ProductForm, ProductCategoryForm, ProductBrandForm, UnitTypeForm, 
+    ProductForm, ProductCategoryForm, ProductBrandForm, UnitTypeForm, WarehouseForm,
     ProductSearchForm, StockReportForm
 )
 from sales.models import SalesOrderItem
@@ -444,4 +444,69 @@ class UnitTypeDeleteView(DeleteView):
     def delete(self, request, *args, **kwargs):
         unit_type = self.get_object()
         messages.success(request, f'Unit Type "{unit_type.name}" deleted successfully.')
+        return super().delete(request, *args, **kwargs)
+
+
+# Warehouse Management Views
+class WarehouseListView(ListView):
+    model = Warehouse
+    template_name = 'stock/warehouse_list.html'
+    context_object_name = 'warehouses'
+    paginate_by = 20
+    ordering = ['name']
+    
+    def get_queryset(self):
+        queryset = Warehouse.objects.all()
+        
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        # Search by name
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        
+        return queryset
+
+
+class WarehouseDetailView(DetailView):
+    model = Warehouse
+    template_name = 'stock/warehouse_detail.html'
+    context_object_name = 'warehouse'
+
+
+class WarehouseCreateView(CreateView):
+    model = Warehouse
+    form_class = WarehouseForm
+    template_name = 'stock/warehouse_form.html'
+    success_url = reverse_lazy('stock:warehouse_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'✅ Warehouse "{form.instance.name}" created successfully!')
+        return super().form_valid(form)
+
+
+class WarehouseUpdateView(UpdateView):
+    model = Warehouse
+    form_class = WarehouseForm
+    template_name = 'stock/warehouse_form.html'
+    success_url = reverse_lazy('stock:warehouse_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'✅ Warehouse "{form.instance.name}" updated successfully!')
+        return super().form_valid(form)
+
+
+class WarehouseDeleteView(DeleteView):
+    model = Warehouse
+    template_name = 'stock/warehouse_confirm_delete.html'
+    success_url = reverse_lazy('stock:warehouse_list')
+    
+    def delete(self, request, *args, **kwargs):
+        warehouse = self.get_object()
+        messages.success(request, f'✅ Warehouse "{warehouse.name}" deleted successfully.')
         return super().delete(request, *args, **kwargs)

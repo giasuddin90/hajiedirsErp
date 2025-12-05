@@ -18,6 +18,19 @@ def get_low_stock_products():
     return low_stock
 
 
+class Warehouse(models.Model):
+    name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Warehouse"
+        verbose_name_plural = "Warehouses"
+
+
 class ProductCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
@@ -91,19 +104,26 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.name} ({self.brand})"
     
-    def get_realtime_quantity(self):
+    def get_realtime_quantity(self, warehouse=None):
         """
         Calculate inventory quantity in real-time from transactions.
-        Simple formula: Total Purchase Received - Total Sales Delivered
+        Formula: Total Goods Receipt Items (received) - Total Sales Delivered
+        If warehouse is specified, returns quantity for that warehouse only.
         """
         try:
-            from purchases.models import PurchaseOrderItem
+            from purchases.models import GoodsReceiptItem
             from sales.models import SalesOrderItem
             
-            # Sum quantities from purchase orders that are received
-            total_purchase_received = PurchaseOrderItem.objects.filter(
-                product=self,
-                purchase_order__status='goods-received'
+            # Sum quantities from goods receipt items that are received
+            receipt_filter = {
+                'product': self,
+                'goods_receipt__status': 'received'
+            }
+            if warehouse:
+                receipt_filter['warehouse'] = warehouse
+            
+            total_purchase_received = GoodsReceiptItem.objects.filter(
+                **receipt_filter
             ).aggregate(total=models.Sum('quantity'))['total'] or Decimal('0')
             
             # Sum quantities from sales orders that are delivered

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Goods Receipt {{ object.receipt_number }} - Building Materials ERP{% endblock %}
+
+{% block page_title %}Goods Receipt {{ object.receipt_number }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    {% if object.status == 'draft' %}
+    <a href="{% url 'purchases:receipt_edit' object.pk %}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Edit
+    </a>
+    <a href="{% url 'purchases:receipt_confirm' object.pk %}" class="btn btn-success">
+        <i class="bi bi-check-circle"></i> Confirm Receipt
+    </a>
+    {% endif %}
+    {% if object.status == 'received' %}
+    <a href="{% url 'purchases:receipt_cancel' object.pk %}" class="btn btn-danger">
+        <i class="bi bi-x-circle"></i> Cancel Receipt
+    </a>
+    {% endif %}
+    <a href="{% url 'purchases:receipt_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Receipts
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-box-arrow-in-down"></i>
+                    Receipt Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Receipt Information</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Receipt Number:</strong></td>
+                                <td>{{ object.receipt_number }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Purchase Order:</strong></td>
+                                <td>
+                                    <a href="{% url 'purchases:order_detail' object.purchase_order.pk %}">
+                                        {{ object.purchase_order.order_number }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Supplier:</strong></td>
+                                <td>{{ object.purchase_order.supplier.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Receipt Date:</strong></td>
+                                <td>{{ object.receipt_date|date:"M d, Y" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Status & Amount</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge {% if object.status == 'received' %}bg-success{% elif object.status == 'draft' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ object.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Amount:</strong></td>
+                                <td>৳{{ object.total_amount|floatformat:2 }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if object.notes %}
+                <div class="mt-3">
+                    <h6>Notes</h6>
+                    <p class="text-muted">{{ object.notes }}</p>
+                </div>
+                {% endif %}
+                
+                {% if object.items.all %}
+                <div class="mt-4">
+                    <h6>Received Items</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Order Item</th>
+                                    <th>Warehouse</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Cost</th>
+                                    <th>Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in object.items.all %}
+                                <tr>
+                                    <td>{{ item.product.name }}</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            Qty: {{ item.purchase_order_item.quantity }} @ ৳{{ item.purchase_order_item.unit_price|floatformat:2 }}
+                                        </small>
+                                    </td>
+                                    <td>{{ item.warehouse.name|default:"-" }}</td>
+                                    <td>{{ item.quantity }} {{ item.product.unit_type.code|default:"" }}</td>
+                                    <td>৳{{ item.unit_cost|floatformat:2 }}</td>
+                                    <td>৳{{ item.total_cost|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="5" class="text-end">Total:</th>
+                                    <th>৳{{ object.total_amount|floatformat:2 }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    Quick Actions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if object.status == 'draft' %}
+                    <a href="{% url 'purchases:receipt_edit' object.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Edit Receipt
+                    </a>
+                    <a href="{% url 'purchases:receipt_confirm' object.pk %}" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Confirm Receipt
+                    </a>
+                    {% endif %}
+                    {% if object.status == 'received' %}
+                    <a href="{% url 'purchases:receipt_cancel' object.pk %}" class="btn btn-danger">
+                        <i class="bi bi-x-circle"></i> Cancel Receipt
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'purchases:order_detail' object.purchase_order.pk %}" class="btn btn-info">
+                        <i class="bi bi-cart"></i> View Purchase Order
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-clock"></i>
+                    Timestamps
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <strong>Created:</strong> {{ object.created_at|date:"M d, Y H:i" }}<br>
+                    {% if object.created_by %}
+                    <strong>Created By:</strong> {{ object.created_by.get_full_name|default:object.created_by.username }}<br>
+                    {% endif %}
+                    <strong>Updated:</strong> {{ object.updated_at|date:"M d, Y H:i" }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit{% else %}New{% endif %} Goods Receipt - Building Materials ERP{% endblock %}
+
+{% block page_title %}{% if object %}Edit Goods Receipt{% else %}New Goods Receipt{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-box-arrow-in-down"></i>
+                    {% if object %}Edit Goods Receipt{% else %}New Goods Receipt{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="goods-receipt-form">
+                    {% csrf_token %}
+                    
+                    <!-- Main Form Fields -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.purchase_order.id_for_label }}" class="form-label">
+                                <i class="bi bi-cart"></i> {{ form.purchase_order.label }} <span class="text-danger fw-bold">*</span>
+                            </label>
+                            {{ form.purchase_order }}
+                            {% if form.purchase_order.errors %}
+                                <div class="invalid-feedback d-block">{{ form.purchase_order.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.receipt_date.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar"></i> {{ form.receipt_date.label }} <span class="text-danger fw-bold">*</span>
+                            </label>
+                            {{ form.receipt_date }}
+                            {% if form.receipt_date.errors %}
+                                <div class="invalid-feedback d-block">{{ form.receipt_date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if purchase_order %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Purchase Order:</strong> {{ purchase_order.order_number }} - {{ purchase_order.supplier.name }}
+                        <br>
+                        <small>Total Order Amount: ৳{{ purchase_order.total_amount|floatformat:2 }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Receipt Items Section -->
+                    <div class="mb-4">
+                        <h6 class="mb-3">
+                            <i class="bi bi-box-seam"></i>
+                            Received Items
+                        </h6>
+                        
+                        {{ formset.management_form }}
+                        
+                        <div id="formset-container">
+                            {% for form in formset %}
+                            <div class="receipt-item-form mb-3 p-3 border rounded" data-form-index="{{ forloop.counter0 }}">
+                                {{ form.id }}
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label">Order Item <span class="text-danger">*</span></label>
+                                        {{ form.purchase_order_item }}
+                                        {% if form.purchase_order_item.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.purchase_order_item.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Warehouse</label>
+                                        {{ form.warehouse }}
+                                        {% if form.warehouse.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.warehouse.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                                        {{ form.quantity }}
+                                        {% if form.quantity.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>
+                                        {% endif %}
+                                        <small class="text-muted remaining-qty"></small>
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">Unit Cost <span class="text-danger">*</span></label>
+                                        {{ form.unit_cost }}
+                                        {% if form.unit_cost.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.unit_cost.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-1 mb-2">
+                                        <label class="form-label">Total</label>
+                                        {{ form.total_cost }}
+                                        {% if form.total_cost.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.total_cost.errors.0 }}</div>
+                                        {% endif %}
+                                        {% if form.DELETE %}
+                                        <div class="form-check mt-2">
+                                            {{ form.DELETE }}
+                                            <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">
+                                                Delete
+                                            </label>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="add-item-btn">
+                            <i class="bi bi-plus-circle"></i> Add Item
+                        </button>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_total_amount" class="form-label">Total Amount</label>
+                            <input type="number" class="form-control" id="id_total_amount" name="total_amount" value="{{ object.total_amount|default:0 }}" step="0.01" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+        
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if object %}{% url 'purchases:receipt_detail' object.pk %}{% else %}{% url 'purchases:receipt_list' %}{% endif %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            <i class="bi bi-check-circle"></i> {% if object %}Update{% else %}Create{% endif %} Receipt
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current date as default
+    const today = new Date().toISOString().split('T')[0];
+    const receiptDateInput = document.getElementById('{{ form.receipt_date.id_for_label }}');
+    if (receiptDateInput && !receiptDateInput.value) {
+        receiptDateInput.value = today;
+    }
+    
+    // Calculate totals
+    function calculateTotal() {
+        let total = 0;
+        document.querySelectorAll('.total-input').forEach(input => {
+            const value = parseFloat(input.value) || 0;
+            total += value;
+        });
+        document.getElementById('id_total_amount').value = total.toFixed(2);
+    }
+    
+    // Calculate item total
+    function calculateItemTotal(itemForm) {
+        const quantity = parseFloat(itemForm.querySelector('.quantity-input')?.value) || 0;
+        const unitCost = parseFloat(itemForm.querySelector('.cost-input')?.value) || 0;
+        const totalInput = itemForm.querySelector('.total-input');
+        if (totalInput) {
+            totalInput.value = (quantity * unitCost).toFixed(2);
+        }
+        calculateTotal();
+    }
+    
+    // Update remaining quantity
+    function updateRemainingQty(select) {
+        const form = select.closest('.receipt-item-form');
+        const remainingQtyEl = form.querySelector('.remaining-qty');
+        if (select.value) {
+            // Fetch remaining quantity via AJAX or use data attribute
+            // For now, we'll show a placeholder
+            remainingQtyEl.textContent = 'Check remaining qty';
+        }
+    }
+    
+    // Event listeners
+    document.querySelectorAll('.quantity-input, .cost-input').forEach(input => {
+        input.addEventListener('input', function() {
+            calculateItemTotal(this.closest('.receipt-item-form'));
+        });
+    });
+    
+    document.querySelectorAll('.purchase-order-item-select').forEach(select => {
+        select.addEventListener('change', function() {
+            updateRemainingQty(this);
+            // Auto-fill unit cost from purchase order item
+            if (this.value) {
+                // You can add AJAX call here to fetch unit price
+            }
+        });
+    });
+    
+    // Add new item
+    const addItemBtn = document.getElementById('add-item-btn');
+    if (addItemBtn) {
+        addItemBtn.addEventListener('click', function() {
+            const formCount = parseInt(document.getElementById('id_items-TOTAL_FORMS').value);
+            const container = document.getElementById('formset-container');
+            const newForm = container.querySelector('.receipt-item-form').cloneNode(true);
+            
+            // Update form indices
+            newForm.querySelectorAll('input, select').forEach(input => {
+                if (input.name) {
+                    input.name = input.name.replace(/-0-/, `-${formCount}-`);
+                    input.id = input.id.replace(/-0-/, `-${formCount}-`);
+                }
+            });
+            
+            // Clear values
+            newForm.querySelectorAll('input[type="number"], select').forEach(input => {
+                if (input.name && !input.name.includes('DELETE')) {
+                    input.value = '';
+                }
+            });
+            
+            container.appendChild(newForm);
+            document.getElementById('id_items-TOTAL_FORMS').value = formCount + 1;
+        });
+    }
+    
+    // Initial calculation
+    calculateTotal();
+});
+</script>
+{% endblock %}
+

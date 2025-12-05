@@ -47,7 +47,7 @@
                             </tr>
                             <tr>
                                 <td><strong>Expected Delivery:</strong></td>
-                                <td>{{ object.expected_delivery_date|date:"M d, Y"|default:"-" }}</td>
+                                <td>{{ object.expected_date|date:"M d, Y"|default:"-" }}</td>
                             </tr>
                         </table>
                     </div>
@@ -77,7 +77,7 @@
                 </div>
                 {% endif %}
                 
-                {% if object.orderitem_set.all %}
+                {% if object.items.all %}
                 <div class="mt-4">
                     <h6>Order Items</h6>
                     <div class="table-responsive">
@@ -85,18 +85,70 @@
                             <thead>
                                 <tr>
                                     <th>Product</th>
-                                    <th>Quantity</th>
+                                    <th>Ordered Qty</th>
+                                    <th>Received Qty</th>
+                                    <th>Remaining Qty</th>
                                     <th>Unit Price</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in object.orderitem_set.all %}
+                                {% for item in object.items.all %}
                                 <tr>
                                     <td>{{ item.product.name }}</td>
-                                    <td>{{ item.quantity }} {{ item.product.unit_name }}</td>
+                                    <td>{{ item.quantity }} {{ item.product.unit_type.code|default:"" }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ item.get_received_quantity }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if item.get_remaining_quantity > 0 %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ item.get_remaining_quantity }}
+                                        </span>
+                                    </td>
                                     <td>৳{{ item.unit_price|floatformat:2 }}</td>
                                     <td>৳{{ item.total_price|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if object.goods_receipts.all %}
+                <div class="mt-4">
+                    <h6>Goods Receipts</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Receipt #</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for receipt in object.goods_receipts.all %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'purchases:receipt_detail' receipt.pk %}">
+                                            {{ receipt.receipt_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ receipt.receipt_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge {% if receipt.status == 'received' %}bg-success{% elif receipt.status == 'draft' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                            {{ receipt.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>৳{{ receipt.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        <a href="{% url 'purchases:receipt_detail' receipt.pk %}" class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -121,7 +173,7 @@
                     <a href="{% url 'purchases:order_edit' object.pk %}" class="btn btn-warning">
                         <i class="bi bi-pencil"></i> Edit Order
                     </a>
-                    <a href="{% url 'purchases:receipt_create' %}" class="btn btn-primary">
+                    <a href="{% url 'purchases:receipt_create' %}?purchase_order={{ object.pk }}" class="btn btn-primary">
                         <i class="bi bi-box-arrow-in-down"></i> Receive Goods
                     </a>
                     <a href="{% url 'suppliers:supplier_detail' object.supplier.pk %}" class="btn btn-info">

@@ -29,8 +29,7 @@ class PurchaseOrderModelTest(TestCase):
             city='Test City'
         )
         self.warehouse = Warehouse.objects.create(
-            name='Test Warehouse',
-            location='Test Location'
+            name='Test Warehouse'
         )
         self.product = Product.objects.create(
             name='Test Product',
@@ -152,8 +151,7 @@ class PurchaseOrderViewTest(TestCase):
             city='Test City'
         )
         self.warehouse = Warehouse.objects.create(
-            name='Test Warehouse',
-            location='Test Location'
+            name='Test Warehouse'
         )
         self.product = Product.objects.create(
             name='Test Product',
@@ -383,8 +381,7 @@ class PurchaseOrderIntegrationTest(TestCase):
             city='Test City'
         )
         self.warehouse = Warehouse.objects.create(
-            name='Test Warehouse',
-            location='Test Location'
+            name='Test Warehouse'
         )
         self.product = Product.objects.create(
             name='Test Product',

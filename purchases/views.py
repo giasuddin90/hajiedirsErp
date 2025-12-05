@@ -5,9 +5,10 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
-from .models import PurchaseOrder, PurchaseOrderItem
+from .models import PurchaseOrder, PurchaseOrderItem, GoodsReceipt, GoodsReceiptItem
 from .forms import (
-    PurchaseOrderForm, PurchaseOrderItemFormSet, PurchaseOrderSearchForm, PurchaseOrderItemForm
+    PurchaseOrderForm, PurchaseOrderItemFormSet, PurchaseOrderItemFormSetCustom, PurchaseOrderSearchForm, PurchaseOrderItemForm,
+    GoodsReceiptForm, GoodsReceiptItemFormSet, GoodsReceiptItemFormSetEdit, GoodsReceiptItemForm
 )
 from suppliers.models import Supplier
 from stock.models import Product, ProductCategory, ProductBrand
@@ -57,9 +58,11 @@ class PurchaseOrderCreateView(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
-            context['formset'] = PurchaseOrderItemFormSet(self.request.POST)
+            # Use custom formset that handles creation without instance
+            context['formset'] = PurchaseOrderItemFormSetCustom(self.request.POST)
         else:
-            context['formset'] = PurchaseOrderItemFormSet()
+            # Use custom formset that handles creation without instance
+            context['formset'] = PurchaseOrderItemFormSetCustom()
         
         context['categories'] = ProductCategory.objects.filter(is_active=True)
         context['brands'] = ProductBrand.objects.filter(is_active=True)
@@ -70,27 +73,35 @@ class PurchaseOrderCreateView(CreateView):
         context = self.get_context_data()
         formset = context['formset']
         
+        # Set created_by before validation
+        form.instance.created_by = self.request.user
+        
         if formset.is_valid():
             with transaction.atomic():
-                # Set created_by
-                form.instance.created_by = self.request.user
-                
                 # Save the order first
                 self.object = form.save()
                 
-                # Set the instance for the formset
+                # Re-bind formset to the actual saved instance
                 formset.instance = self.object
+                # Re-validate with the correct instance
+                formset = PurchaseOrderItemFormSet(self.request.POST, instance=self.object)
                 
-                # Save formset
-                formset.save()
-                
-                # Calculate total amount and round to 2 decimal places
-                total_amount = sum(item.total_price for item in self.object.items.all())
-                self.object.total_amount = round(total_amount, 2)
-                self.object.save()
-                
-                messages.success(self.request, f'✅ Purchase Order {self.object.order_number} created successfully!')
-                return redirect(self.success_url)
+                if formset.is_valid():
+                    # Save formset
+                    formset.save()
+                    
+                    # Calculate total amount and round to 2 decimal places
+                    total_amount = sum(item.total_price for item in self.object.items.all())
+                    self.object.total_amount = round(total_amount, 2)
+                    self.object.save()
+                    
+                    messages.success(self.request, f'✅ Purchase Order {self.object.order_number} created successfully!')
+                    return redirect(self.success_url)
+                else:
+                    # If formset validation fails after binding, show errors
+                    messages.error(self.request, '❌ Please correct the errors below.')
+                    context['formset'] = formset
+                    return self.render_to_response(context)
         else:
             messages.error(self.request, '❌ Please correct the errors below.')
             return self.form_invalid(form)
@@ -208,3 +219,180 @@ class PurchaseSupplierReportView(ListView):
         if supplier_id:
             return PurchaseOrder.objects.filter(supplier_id=supplier_id)
         return PurchaseOrder.objects.none()
+
+
+# Goods Receipt Views
+class GoodsReceiptListView(ListView):
+    model = GoodsReceipt
+    template_name = 'purchases/receipt_list.html'
+    context_object_name = 'receipts'
+    paginate_by = 20
+    ordering = ['-receipt_date', '-created_at']
+    
+    def get_queryset(self):
+        from django.db import models
+        queryset = super().get_queryset()
+        search_query = self.request.GET.get('search')
+        purchase_order_id = self.request.GET.get('purchase_order')
+        
+        if search_query:
+            queryset = queryset.filter(
+                models.Q(receipt_number__icontains=search_query) |
+                models.Q(purchase_order__order_number__icontains=search_query) |
+                models.Q(purchase_order__supplier__name__icontains=search_query)
+            )
+        
+        if purchase_order_id:
+            queryset = queryset.filter(purchase_order_id=purchase_order_id)
+        
+        return queryset.select_related('purchase_order', 'purchase_order__supplier', 'created_by')
+
+
+class GoodsReceiptDetailView(DetailView):
+    model = GoodsReceipt
+    template_name = 'purchases/receipt_detail.html'
+    context_object_name = 'receipt'
+
+
+class GoodsReceiptCreateView(CreateView):
+    model = GoodsReceipt
+    form_class = GoodsReceiptForm
+    template_name = 'purchases/receipt_form.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('purchases:receipt_detail', kwargs={'pk': self.object.pk})
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        purchase_order = None
+        
+        # Get purchase_order from GET or POST
+        purchase_order_id = self.request.GET.get('purchase_order') or self.request.POST.get('purchase_order')
+        
+        if purchase_order_id:
+            purchase_order = get_object_or_404(PurchaseOrder, pk=purchase_order_id)
+            context['purchase_order'] = purchase_order
+        
+        # Create formset with purchase_order
+        if self.request.POST:
+            formset = GoodsReceiptItemFormSet(self.request.POST, purchase_order=purchase_order)
+        else:
+            formset = GoodsReceiptItemFormSet(purchase_order=purchase_order)
+            # Set initial purchase_order if provided
+            if purchase_order:
+                context['form'].initial['purchase_order'] = purchase_order
+        
+        context['formset'] = formset
+        return context
+    
+    def form_valid(self, form):
+        purchase_order = form.cleaned_data.get('purchase_order')
+        
+        # Recreate formset with the validated purchase_order
+        formset = GoodsReceiptItemFormSet(self.request.POST, purchase_order=purchase_order)
+        
+        if formset.is_valid():
+            with transaction.atomic():
+                # Set created_by
+                form.instance.created_by = self.request.user
+                
+                # Save the receipt first
+                self.object = form.save()
+                
+                # Set the instance for the formset
+                formset.instance = self.object
+                
+                # Save formset
+                formset.save()
+                
+                # Calculate total amount
+                total_amount = sum(item.total_cost for item in self.object.items.all())
+                self.object.total_amount = round(total_amount, 2)
+                self.object.save()
+                
+                messages.success(self.request, f'✅ Goods Receipt {self.object.receipt_number} created successfully!')
+                return redirect(self.get_success_url())
+        else:
+            messages.error(self.request, '❌ Please correct the errors below.')
+            return self.form_invalid(form)
+
+
+class GoodsReceiptUpdateView(UpdateView):
+    model = GoodsReceipt
+    form_class = GoodsReceiptForm
+    template_name = 'purchases/receipt_form.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('purchases:receipt_detail', kwargs={'pk': self.object.pk})
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        purchase_order = self.object.purchase_order
+        
+        if self.request.POST:
+            formset = GoodsReceiptItemFormSetEdit(self.request.POST, instance=self.object, purchase_order=purchase_order)
+        else:
+            # For edit view, use edit formset (no extra forms)
+            formset = GoodsReceiptItemFormSetEdit(instance=self.object, purchase_order=purchase_order)
+        
+        context['formset'] = formset
+        context['purchase_order'] = purchase_order
+        return context
+    
+    def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context['formset']
+        purchase_order = self.object.purchase_order
+        
+        if formset.is_valid():
+            with transaction.atomic():
+                # Save the receipt first
+                response = super().form_valid(form)
+                
+                # Save formset
+                formset.save()
+                
+                # Calculate total amount
+                total_amount = sum(item.total_cost for item in self.object.items.all())
+                self.object.total_amount = round(total_amount, 2)
+                self.object.save()
+                
+                messages.success(self.request, f'✅ Goods Receipt {self.object.receipt_number} updated successfully!')
+                return response
+        else:
+            messages.error(self.request, '❌ Please correct the errors below.')
+            return self.form_invalid(form)
+
+
+class GoodsReceiptDeleteView(DeleteView):
+    model = GoodsReceipt
+    template_name = 'purchases/receipt_confirm_delete.html'
+    success_url = reverse_lazy('purchases:receipt_list')
+
+
+def confirm_goods_receipt(request, pk):
+    """Confirm goods receipt and update inventory"""
+    receipt = get_object_or_404(GoodsReceipt, pk=pk)
+    
+    if receipt.status == 'draft':
+        with transaction.atomic():
+            receipt.confirm_receipt()
+            messages.success(request, f'✅ Goods Receipt {receipt.receipt_number} confirmed! Inventory updated.')
+    else:
+        messages.warning(request, f'⚠️ Goods Receipt {receipt.receipt_number} is already {receipt.get_status_display()}.')
+    
+    return redirect('purchases:receipt_detail', pk=receipt.pk)
+
+
+def cancel_goods_receipt(request, pk):
+    """Cancel goods receipt and reverse inventory"""
+    receipt = get_object_or_404(GoodsReceipt, pk=pk)
+    
+    if receipt.status == 'received':
+        with transaction.atomic():
+            receipt.cancel_receipt()
+            messages.success(request, f'✅ Goods Receipt {receipt.receipt_number} cancelled! Inventory adjusted.')
+    else:
+        messages.warning(request, f'⚠️ Only received receipts can be cancelled.')
+    
+    return redirect('purchases:receipt_detail', pk=receipt.pk)

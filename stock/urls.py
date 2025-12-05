@@ -37,6 +37,13 @@ urlpatterns = [
     path('unit-types/<int:pk>/edit/', views.UnitTypeUpdateView.as_view(), name='unittype_edit'),
     path('unit-types/<int:pk>/delete/', views.UnitTypeDeleteView.as_view(), name='unittype_delete'),
     
+    # Warehouse Management
+    path('warehouses/', views.WarehouseListView.as_view(), name='warehouse_list'),
+    path('warehouses/create/', views.WarehouseCreateView.as_view(), name='warehouse_create'),
+    path('warehouses/<int:pk>/', views.WarehouseDetailView.as_view(), name='warehouse_detail'),
+    path('warehouses/<int:pk>/edit/', views.WarehouseUpdateView.as_view(), name='warehouse_edit'),
+    path('warehouses/<int:pk>/delete/', views.WarehouseDeleteView.as_view(), name='warehouse_delete'),
+    
     # Stock Management (now shows real-time inventory)
     path('stock/', views.StockListView.as_view(), name='stock_list'),
     path('stock/<int:pk>/', views.StockDetailView.as_view(), name='stock_detail'),
