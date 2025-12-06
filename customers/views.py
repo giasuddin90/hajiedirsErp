@@ -99,24 +99,10 @@ class CustomerLedgerDetailView(DetailView):
         customer = self.get_object()
         transactions = []
         
-        # Sales Orders
-        sales_orders = SalesOrder.objects.filter(customer=customer).order_by('-order_date')
-        for order in sales_orders:
-            transactions.append({
-                'date': order.order_date,
-                'type': 'Sales Order',
-                'reference': f"SO-{order.order_number}",
-                'description': f"Sales Order - {order.customer.name}",
-                'debit': order.total_amount,
-                'credit': Decimal('0.00'),
-                'status': order.status,
-                'created_at': order.created_at,
-            })
+        # Note: Sales orders are tracked via CustomerLedger entries (created automatically)
+        # when sales orders are created, so we don't need to add them separately here
         
-        # Note: In simplified model, only sales orders are tracked
-        # Sales invoices, payments, and returns are not used
-        
-        # Manual Ledger Entries
+        # Ledger Entries (includes sales orders, payments, opening balances, etc.)
         ledger_entries = CustomerLedger.objects.filter(customer=customer).order_by('-transaction_date')
         for entry in ledger_entries:
             if entry.transaction_type == 'sale':
@@ -300,21 +286,10 @@ def customer_ledger_pdf(request, pk):
         customer = get_object_or_404(Customer, pk=pk)
         transactions = []
         
-        # Sales Orders
-        sales_orders = SalesOrder.objects.filter(customer=customer).order_by('-order_date')
-        for order in sales_orders:
-            transactions.append({
-                'date': order.order_date,
-                'type': 'Sales Order',
-                'reference': f"SO-{order.order_number}",
-                'description': f"Sales Order - {order.customer.name}",
-                'debit': order.total_amount,
-                'credit': Decimal('0.00'),
-                'status': order.status,
-                'created_at': order.created_at,
-            })
+        # Note: Sales orders are tracked via CustomerLedger entries (created automatically)
+        # when sales orders are created, so we don't need to add them separately here
         
-        # Manual Ledger Entries
+        # Ledger Entries (includes sales orders, payments, opening balances, etc.)
         ledger_entries = CustomerLedger.objects.filter(customer=customer).order_by('-transaction_date')
         for entry in ledger_entries:
             if entry.transaction_type == 'sale':
