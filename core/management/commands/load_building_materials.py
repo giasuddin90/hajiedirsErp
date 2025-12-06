@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from decimal import Decimal
+from django.contrib.auth.models import User
 from stock.models import Product, ProductCategory, ProductBrand, UnitType
 
 
@@ -16,6 +17,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write('Loading building materials data for Bangladeshi market...')
+        
+        # Get or create admin user
+        admin_user = self.create_admin_user()
         
         with transaction.atomic():
             # Clear existing products
@@ -48,6 +52,10 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.SUCCESS('✓ Building materials data loaded successfully!')
             )
+            self.stdout.write('')
+            self.stdout.write('Login credentials:')
+            self.stdout.write('Username: admin')
+            self.stdout.write('Password: admin123')
 
     def create_unit_types(self):
         """Create or get unit types for building materials"""
@@ -396,4 +404,27 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f'✓ Created {created_count} building material products')
         )
+
+    def create_admin_user(self):
+        """Create or get admin user for building materials ERP"""
+        admin_user, created = User.objects.get_or_create(
+            username='admin',
+            defaults={
+                'email': 'admin@buildingmaterials.com',
+                'first_name': 'Admin',
+                'last_name': 'User',
+                'is_staff': True,
+                'is_superuser': True
+            }
+        )
+        if created:
+            admin_user.set_password('admin123')
+            admin_user.save()
+            self.stdout.write(
+                self.style.SUCCESS('✓ Created admin user (username: admin, password: admin123)')
+            )
+        else:
+            self.stdout.write('  Admin user already exists')
+        
+        return admin_user
 
