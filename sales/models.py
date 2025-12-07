@@ -25,6 +25,7 @@ class SalesOrder(models.Model):
     delivery_date = models.DateField(null=True, blank=True, help_text="Not required for instant sales")
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default='order')
     total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    delivery_charges = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Total delivery charges (auto-calculated, can be manually adjusted)")
     transportation_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Transportation cost for this order")
     notes = models.TextField(blank=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)

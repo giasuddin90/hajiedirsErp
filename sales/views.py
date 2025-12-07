@@ -57,10 +57,13 @@ def generate_invoice_description(order):
     
     # Calculate subtotal and charges
     subtotal = sum(item.total_price for item in order.items.all())
-    delivery_charges = Decimal('0')
-    for item in order.items.all():
-        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
-        delivery_charges += item.quantity * delivery_charge_per_unit
+    # Use stored delivery_charges from order, or calculate if not set
+    delivery_charges = order.delivery_charges or Decimal('0')
+    if delivery_charges == 0:
+        # Calculate if not manually set
+        for item in order.items.all():
+            delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+            delivery_charges += item.quantity * delivery_charge_per_unit
     
     transportation_cost = order.transportation_cost or Decimal('0')
     total_amount = subtotal + delivery_charges + transportation_cost
@@ -186,11 +189,22 @@ class SalesOrderCreateView(CreateView):
                     # Calculate total amount (subtotal + delivery charges + transportation cost)
                     subtotal = sum(item.total_price for item in self.object.items.all())
                     
-                    # Calculate delivery charges
-                    delivery_charges = Decimal('0')
-                    for item in self.object.items.all():
-                        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
-                        delivery_charges += item.quantity * delivery_charge_per_unit
+                    # Get form's delivery_charges value (always use form value if provided, even if 0)
+                    form_delivery_charges = form.cleaned_data.get('delivery_charges')
+                    
+                    # If form value is None or not provided, calculate automatically
+                    if form_delivery_charges is None:
+                        # Calculate delivery charges automatically
+                        delivery_charges = Decimal('0')
+                        for item in self.object.items.all():
+                            delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+                            delivery_charges += item.quantity * delivery_charge_per_unit
+                    else:
+                        # Use form value (respects manual input, even if 0)
+                        delivery_charges = form_delivery_charges
+                    
+                    # Save delivery charges value
+                    self.object.delivery_charges = delivery_charges
                     
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
@@ -308,11 +322,11 @@ class SalesOrderUpdateView(UpdateView):
                     # Calculate total amount (subtotal + delivery charges + transportation cost)
                     subtotal = sum(item.total_price for item in self.object.items.all())
                     
-                    # Calculate delivery charges
-                    delivery_charges = Decimal('0')
-                    for item in self.object.items.all():
-                        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
-                        delivery_charges += item.quantity * delivery_charge_per_unit
+                    # Always use form's delivery_charges value (respects manual input, even if 0)
+                    delivery_charges = form.cleaned_data.get('delivery_charges', self.object.delivery_charges or Decimal('0'))
+                    
+                    # Save delivery charges value
+                    self.object.delivery_charges = delivery_charges
                     
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
@@ -426,15 +440,17 @@ def sales_order_invoice(request, order_id):
         # Calculate subtotal (products only)
         subtotal = sum(item.total_price for item in order.items.all())
         
-        # Calculate delivery charges per item and total
-        delivery_charges = Decimal('0')
+        # Use stored delivery_charges from order (respects manual 0 if set)
+        delivery_charges = order.delivery_charges or Decimal('0')
         items_with_delivery = []
         items_with_tile_info = []
         
+        # Calculate delivery charges per item for display
+        calculated_delivery_charges = Decimal('0')
         for item in order.items.all():
             delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
             item_delivery_charge = item.quantity * delivery_charge_per_unit
-            delivery_charges += item_delivery_charge
+            calculated_delivery_charges += item_delivery_charge
             items_with_delivery.append({
                 'item': item,
                 'delivery_charge_per_unit': delivery_charge_per_unit,
@@ -453,9 +469,8 @@ def sales_order_invoice(request, order_id):
                     
                     if unit_code == 'sqft':
                         # Quantity is in sqft
-                        total_pieces = item.quantity
-                        total_sqft = item.quantity * sqft_per_pcs
-                        # total_pieces = total_sqft / sqft_per_pcs
+                        total_sqft = item.quantity
+                        total_pieces = total_sqft / sqft_per_pcs
                     else:
                         # Quantity is in pieces, calculate sqft
                         total_pieces = item.quantity
@@ -475,6 +490,10 @@ def sales_order_invoice(request, order_id):
                 'item': item,
                 'tile_info': tile_info,
             })
+        
+        # Use manual delivery charges if set (even if 0), otherwise use calculated
+        if delivery_charges == 0 and order.delivery_charges is None:
+            delivery_charges = calculated_delivery_charges
         
         # Get transportation cost
         transportation_cost = order.transportation_cost or Decimal('0')
@@ -559,11 +578,18 @@ class InstantSalesCreateView(CreateView):
                     # Calculate total amount (subtotal + delivery charges + transportation cost)
                     subtotal = sum(item.total_price for item in self.object.items.all())
                     
-                    # Calculate delivery charges
-                    delivery_charges = Decimal('0')
-                    for item in self.object.items.all():
-                        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
-                        delivery_charges += item.quantity * delivery_charge_per_unit
+                    # Use form's delivery_charges value (respects manual input, even if 0)
+                    # For instant sales, calculate if not manually set
+                    delivery_charges = self.object.delivery_charges or Decimal('0')
+                    if delivery_charges == 0:
+                        # Calculate delivery charges automatically
+                        delivery_charges = Decimal('0')
+                        for item in self.object.items.all():
+                            delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
+                            delivery_charges += item.quantity * delivery_charge_per_unit
+                    
+                    # Save delivery charges value
+                    self.object.delivery_charges = delivery_charges
                     
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
@@ -654,11 +680,11 @@ class InstantSalesUpdateView(UpdateView):
                     # Calculate total amount (subtotal + delivery charges + transportation cost)
                     subtotal = sum(item.total_price for item in self.object.items.all())
                     
-                    # Calculate delivery charges
-                    delivery_charges = Decimal('0')
-                    for item in self.object.items.all():
-                        delivery_charge_per_unit = item.product.delivery_charge_per_unit or Decimal('0')
-                        delivery_charges += item.quantity * delivery_charge_per_unit
+                    # Always use form's delivery_charges value (respects manual input, even if 0)
+                    delivery_charges = self.object.delivery_charges or Decimal('0')
+                    
+                    # Save delivery charges value
+                    self.object.delivery_charges = delivery_charges
                     
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')

@@ -23,9 +23,37 @@ class RoundedDecimalField(forms.DecimalField):
 class SalesOrderForm(forms.ModelForm):
     """Form for creating and editing sales orders"""
     
+    delivery_charges = RoundedDecimalField(
+        max_digits=15,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0.00', 'id': 'id_delivery_charges'}),
+        label='Total Delivery Charge',
+        required=False,
+        min_value=Decimal('0'),  # Explicitly allow 0
+        max_value=None  # No maximum limit
+    )
+    
+    def clean_delivery_charges(self):
+        """Allow 0 as a valid value for delivery charges"""
+        value = self.cleaned_data.get('delivery_charges')
+        # If value is None or empty string, return None (will be calculated in view)
+        if value is None or value == '':
+            return None
+        # Convert to Decimal if needed
+        if not isinstance(value, Decimal):
+            try:
+                value = Decimal(str(value))
+            except (ValueError, TypeError):
+                return None
+        # Allow 0 as a valid value - explicitly allow it
+        if value < 0:
+            raise forms.ValidationError('Delivery charges cannot be negative.')
+        # Return the value (including 0 if user set it to 0)
+        return value
+    
     class Meta:
         model = SalesOrder
-        fields = ['sales_type', 'customer', 'customer_name', 'order_date', 'delivery_date', 'status', 'transportation_cost', 'notes']
+        fields = ['sales_type', 'customer', 'customer_name', 'order_date', 'delivery_date', 'status', 'delivery_charges', 'transportation_cost', 'notes']
         widgets = {
             'sales_type': forms.Select(attrs={'class': 'form-select'}),
             'order_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -65,6 +93,11 @@ class SalesOrderForm(forms.ModelForm):
         if not self.instance.pk:
             self.fields['status'].initial = 'order'
             self.fields['sales_type'].initial = 'regular'
+            self.fields['delivery_charges'].initial = 0
+        else:
+            # For existing orders, always show the saved delivery_charges from database
+            # Don't recalculate - respect the saved value (even if 0)
+            self.fields['delivery_charges'].initial = self.instance.delivery_charges or Decimal('0')
     
     def clean(self):
         cleaned_data = super().clean()

@@ -92,7 +92,7 @@ class Product(models.Model):
     unit_type = models.ForeignKey(UnitType, on_delete=models.PROTECT, related_name='products', help_text="Unit of measurement for this product")
     delivery_charge_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     pcs_per_carton = models.IntegerField(default=0)
-    sqft_per_pcs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    sqft_per_pcs = models.DecimalField(max_digits=20, decimal_places=10, default=0)
     description = models.TextField(blank=True)
     cost_price = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     selling_price = models.DecimalField(max_digits=15, decimal_places=2, default=0)
