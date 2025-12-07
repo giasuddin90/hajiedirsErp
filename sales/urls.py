@@ -26,6 +26,7 @@ urlpatterns = [
     path('orders/<int:order_id>/mark-delivered/', views.mark_order_delivered, name='mark_order_delivered'),
     path('orders/<int:order_id>/cancel/', views.cancel_sales_order, name='cancel_sales_order'),
     path('orders/<int:order_id>/invoice/', views.sales_order_invoice, name='order_invoice'),
+    path('orders/<int:order_id>/labour-chalan/', views.labour_chalan, name='labour_chalan'),
     
     # Reports
     path('reports/daily/', views.SalesDailyReportView.as_view(), name='sales_daily_report'),

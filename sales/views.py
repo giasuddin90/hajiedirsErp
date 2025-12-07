@@ -525,6 +525,72 @@ def sales_order_invoice(request, order_id):
         return redirect('sales:order_detail', order_id)
 
 
+def labour_chalan(request, order_id):
+    """Generate labour chalan PDF for sales order (no cost calculations)"""
+    try:
+        order = get_object_or_404(SalesOrder, id=order_id)
+        
+        items_with_tile_info = []
+        
+        # Prepare items with tile information (if applicable)
+        for item in order.items.all():
+            # Calculate tile information if category is "Tiles"
+            tile_info = None
+            if item.product.category and item.product.category.name.lower() == 'tiles':
+                pcs_per_carton = item.product.pcs_per_carton or 0
+                sqft_per_pcs = item.product.sqft_per_pcs or Decimal('0')
+                
+                if sqft_per_pcs > 0 and pcs_per_carton > 0:
+                    # Check if quantity is in sqft or pieces based on unit type
+                    unit_code = item.product.unit_type.code.lower() if item.product.unit_type else ''
+                    
+                    if unit_code == 'sqft':
+                        # Quantity is in sqft
+                        total_sqft = item.quantity
+                        total_pieces = total_sqft / sqft_per_pcs
+                    else:
+                        # Quantity is in pieces, calculate sqft
+                        total_pieces = item.quantity
+                        total_sqft = total_pieces * sqft_per_pcs
+                    
+                    # Calculate cartons and remaining pieces
+                    cartons = int(total_pieces // pcs_per_carton)
+                    remaining_pieces = int(total_pieces % pcs_per_carton)
+                    
+                    tile_info = {
+                        'total_sqft': total_sqft,
+                        'cartons': cartons,
+                        'pieces': remaining_pieces,
+                    }
+            
+            items_with_tile_info.append({
+                'item': item,
+                'tile_info': tile_info,
+            })
+        
+        # Get template
+        template = get_template('sales/labour_chalan.html')
+        
+        # Prepare context (no cost information)
+        company_info = get_company_info()
+        context = {
+            'order': order,
+            'items': order.items.all(),
+            'items_with_tile_info': items_with_tile_info,
+            **company_info,  # Unpack company info into context
+        }
+        
+        # Render HTML
+        html = template.render(context)
+        
+        # For now, return HTML response (can be enhanced with PDF generation later)
+        return HttpResponse(html, content_type='text/html')
+        
+    except Exception as e:
+        messages.error(request, f"Error generating labour chalan: {str(e)}")
+        return redirect('sales:order_detail', order_id)
+
+
 class InstantSalesCreateView(CreateView):
     """View for creating instant sales"""
     model = SalesOrder
