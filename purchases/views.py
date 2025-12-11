@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from .models import PurchaseOrder, PurchaseOrderItem, GoodsReceipt, GoodsReceiptItem
 from .forms import (
     PurchaseOrderForm, PurchaseOrderItemFormSet, PurchaseOrderItemFormSetCustom, PurchaseOrderSearchForm, PurchaseOrderItemForm,
@@ -217,25 +218,41 @@ class PurchaseSupplierReportView(ListView):
     
     def get_queryset(self):
         supplier_id = self.request.GET.get('supplier')
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
+        start_date = parse_date(start_date_str) if start_date_str else None
+        end_date = parse_date(end_date_str) if end_date_str else None
+        
         if not supplier_id:
             return PurchaseOrder.objects.none()
         
-        return (
+        qs = (
             PurchaseOrder.objects.filter(supplier_id=supplier_id)
             .select_related('supplier', 'created_by')
             .order_by('-order_date', '-created_at')
         )
+        if start_date:
+            qs = qs.filter(order_date__gte=start_date)
+        if end_date:
+            qs = qs.filter(order_date__lte=end_date)
+        return qs
     
     def get_context_data(self, **kwargs):
         from django.db.models import Sum
         
         context = super().get_context_data(**kwargs)
         supplier_id = self.request.GET.get('supplier')
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
+        start_date = parse_date(start_date_str) if start_date_str else None
+        end_date = parse_date(end_date_str) if end_date_str else None
         
         # Supplier list for the filter dropdown
         context['suppliers'] = Supplier.objects.filter(is_active=True).order_by('name')
         context['selected_supplier_id'] = int(supplier_id) if supplier_id else None
         context['selected_supplier'] = None
+        context['start_date'] = start_date_str or ''
+        context['end_date'] = end_date_str or ''
         
         if supplier_id:
             context['selected_supplier'] = Supplier.objects.filter(id=supplier_id).first()
@@ -246,6 +263,10 @@ class PurchaseSupplierReportView(ListView):
                 .select_related('purchase_order', 'purchase_order__supplier', 'created_by')
                 .order_by('-receipt_date', '-created_at')
             )
+            if start_date:
+                receipts = receipts.filter(receipt_date__gte=start_date)
+            if end_date:
+                receipts = receipts.filter(receipt_date__lte=end_date)
             context['receipts'] = receipts
             
             # Order items with received/remaining quantities (ledger-style)
@@ -254,6 +275,10 @@ class PurchaseSupplierReportView(ListView):
                 .select_related('purchase_order', 'product')
                 .order_by('-purchase_order__order_date', '-purchase_order__created_at')
             )
+            if start_date:
+                order_items = order_items.filter(purchase_order__order_date__gte=start_date)
+            if end_date:
+                order_items = order_items.filter(purchase_order__order_date__lte=end_date)
             context['order_items'] = order_items
             
             # Receipt items with quantities (ledger-style)
@@ -262,6 +287,10 @@ class PurchaseSupplierReportView(ListView):
                 .select_related('goods_receipt', 'goods_receipt__purchase_order', 'product', 'warehouse')
                 .order_by('-goods_receipt__receipt_date', '-goods_receipt__created_at')
             )
+            if start_date:
+                receipt_items = receipt_items.filter(goods_receipt__receipt_date__gte=start_date)
+            if end_date:
+                receipt_items = receipt_items.filter(goods_receipt__receipt_date__lte=end_date)
             context['receipt_items'] = receipt_items
             
             # Totals
