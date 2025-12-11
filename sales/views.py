@@ -577,6 +577,10 @@ def sales_order_invoice(request, order_id):
         # Get transportation cost
         transportation_cost = order.transportation_cost or Decimal('0')
         
+        # Calculate due amount (Total - Deposit)
+        customer_deposit = order.customer_deposit or Decimal('0')
+        due_amount = order.total_amount - customer_deposit
+        
         # Get template
         template = get_template('sales/invoice_pdf.html')
         
@@ -590,6 +594,8 @@ def sales_order_invoice(request, order_id):
             'subtotal': subtotal,
             'delivery_charges': delivery_charges,
             'transportation_cost': transportation_cost,
+            'customer_deposit': customer_deposit,
+            'due_amount': due_amount,
             **company_info,  # Unpack company info into context
         }
         
