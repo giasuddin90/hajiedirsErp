@@ -195,9 +195,16 @@ class SalesOrderItemForm(forms.ModelForm):
         required=False
     )
     
+    product_note = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control product-note-input', 'placeholder': 'Short note (optional)', 'maxlength': '255'}),
+        label='Product Note'
+    )
+    
     class Meta:
         model = SalesOrderItem
-        fields = ['product', 'warehouse', 'quantity', 'unit_price', 'total_price']
+        fields = ['product', 'warehouse', 'quantity', 'unit_price', 'total_price', 'product_note']
         widgets = {
             'product': forms.Select(attrs={'class': 'form-select product-select'}),
             'warehouse': forms.Select(attrs={'class': 'form-select warehouse-select'}),
@@ -302,7 +309,7 @@ SalesOrderItemFormSet = inlineformset_factory(
     SalesOrderItem,
     form=SalesOrderItemForm,
     formset=BaseSalesOrderItemFormSet,
-    fields=['product', 'warehouse', 'quantity', 'unit_price', 'total_price'],
+    fields=['product', 'warehouse', 'quantity', 'unit_price', 'total_price', 'product_note'],
     extra=0,  # No extra forms by default
     can_delete=True,
     min_num=0,  # Allow zero items initially

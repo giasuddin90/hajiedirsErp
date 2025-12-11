@@ -373,6 +373,11 @@
                                     {% endif %})</small>
                                 {% endif %}
                             </div>
+                            {% if item_data.item.product_note %}
+                            <div style="font-size: 9px; color: #856404; font-style: italic; margin-top: 3px;">
+                                <strong>Note:</strong> {{ item_data.item.product_note }}
+                            </div>
+                            {% endif %}
                         </td>
                         <td>
                             {% if item_data.item.warehouse %}

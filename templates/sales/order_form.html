@@ -244,6 +244,17 @@
                                             </small>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Product Note -->
+                                    <div class="col-12 mt-2">
+                                        <label class="form-label">
+                                            <i class="bi bi-sticky"></i> Product Note <small class="text-muted">(Optional)</small>
+                                        </label>
+                                        {{ form.product_note }}
+                                        {% if form.product_note.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.product_note.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 {% endfor %}
                             {% else %}
@@ -968,6 +979,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="product-details"></span>
                     </small>
                 </div>
+            </div>
+            <div class="col-12 mt-2">
+                <label class="form-label">
+                    <i class="bi bi-sticky"></i> Product Note <small class="text-muted">(Optional)</small>
+                </label>
+                <input type="text" class="form-control product-note-input" name="form-0-product_note" placeholder="Short note (optional)" maxlength="255">
             </div>
         `;
         return templateRow;

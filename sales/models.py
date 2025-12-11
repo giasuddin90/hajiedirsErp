@@ -82,6 +82,7 @@ class SalesOrderItem(models.Model):
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     unit_price = models.DecimalField(max_digits=15, decimal_places=2)
     total_price = models.DecimalField(max_digits=15, decimal_places=2)
+    product_note = models.CharField(max_length=255, blank=True, help_text="Short note for this product item")
 
     def __str__(self):
         return f"{self.sales_order.order_number} - {self.product.name}"
