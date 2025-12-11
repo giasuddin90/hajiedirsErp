@@ -449,6 +449,12 @@
                         <span>৳{{ order.labor_charges|floatformat:2 }}</span>
                     </div>
                     {% endif %}
+                    {% if order.discount_amount and order.discount_amount > 0 %}
+                    <div class="total-row" style="color: #dc3545;">
+                        <span style="font-weight: 600;">Discount:</span>
+                        <span style="font-weight: 600;">-৳{{ order.discount_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
                     <div class="total-row final">
                         <span>Total Amount:</span>
                         <span>৳{{ order.total_amount|floatformat:2 }}</span>

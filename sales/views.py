@@ -260,12 +260,19 @@ class SalesOrderCreateView(CreateView):
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
                     
+                    # Get discount amount
+                    discount_amount = form.cleaned_data.get('discount_amount') or Decimal('0')
+                    self.object.discount_amount = discount_amount
+                    
                     # Get customer deposit
                     customer_deposit = form.cleaned_data.get('customer_deposit') or Decimal('0')
                     self.object.customer_deposit = customer_deposit
                     
-                    # Total amount
-                    total_amount = subtotal + delivery_charges + transportation_cost
+                    # Total amount (subtotal + delivery + transportation - discount)
+                    total_amount = subtotal + delivery_charges + transportation_cost - discount_amount
+                    # Ensure total doesn't go negative
+                    if total_amount < 0:
+                        total_amount = Decimal('0')
                     self.object.total_amount = total_amount
                     self.object.save()
                     
@@ -389,13 +396,20 @@ class SalesOrderUpdateView(UpdateView):
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
                     
+                    # Get discount amount
+                    discount_amount = form.cleaned_data.get('discount_amount') or Decimal('0')
+                    self.object.discount_amount = discount_amount
+                    
                     # Get customer deposit (handle both new and existing deposits)
                     old_deposit = self.object.customer_deposit or Decimal('0')
                     new_deposit = form.cleaned_data.get('customer_deposit') or Decimal('0')
                     self.object.customer_deposit = new_deposit
                     
-                    # Total amount
-                    total_amount = subtotal + delivery_charges + transportation_cost
+                    # Total amount (subtotal + delivery + transportation - discount)
+                    total_amount = subtotal + delivery_charges + transportation_cost - discount_amount
+                    # Ensure total doesn't go negative
+                    if total_amount < 0:
+                        total_amount = Decimal('0')
                     self.object.total_amount = total_amount
                     self.object.save()
                     
@@ -745,8 +759,14 @@ class InstantSalesCreateView(CreateView):
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
                     
-                    # Total amount
-                    total_amount = subtotal + delivery_charges + transportation_cost
+                    # Get discount amount
+                    discount_amount = self.object.discount_amount or Decimal('0')
+                    
+                    # Total amount (subtotal + delivery + transportation - discount)
+                    total_amount = subtotal + delivery_charges + transportation_cost - discount_amount
+                    # Ensure total doesn't go negative
+                    if total_amount < 0:
+                        total_amount = Decimal('0')
                     self.object.total_amount = total_amount
                     self.object.save()
                     print(f"DEBUG: Total amount set to: {total_amount}")
@@ -840,8 +860,14 @@ class InstantSalesUpdateView(UpdateView):
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
                     
-                    # Total amount
-                    total_amount = subtotal + delivery_charges + transportation_cost
+                    # Get discount amount
+                    discount_amount = self.object.discount_amount or Decimal('0')
+                    
+                    # Total amount (subtotal + delivery + transportation - discount)
+                    total_amount = subtotal + delivery_charges + transportation_cost - discount_amount
+                    # Ensure total doesn't go negative
+                    if total_amount < 0:
+                        total_amount = Decimal('0')
                     self.object.total_amount = total_amount
                     self.object.save()
                     

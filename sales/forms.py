@@ -51,6 +51,16 @@ class SalesOrderForm(forms.ModelForm):
         # Return the value (including 0 if user set it to 0)
         return value
     
+    discount_amount = RoundedDecimalField(
+        max_digits=15,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0.00', 'id': 'id_discount_amount'}),
+        label='Discount Amount',
+        required=False,
+        min_value=Decimal('0'),
+        max_value=None
+    )
+    
     customer_deposit = RoundedDecimalField(
         max_digits=15,
         decimal_places=2,
@@ -63,7 +73,7 @@ class SalesOrderForm(forms.ModelForm):
     
     class Meta:
         model = SalesOrder
-        fields = ['sales_type', 'customer', 'customer_name', 'order_date', 'delivery_date', 'status', 'delivery_charges', 'transportation_cost', 'customer_deposit', 'notes']
+        fields = ['sales_type', 'customer', 'customer_name', 'order_date', 'delivery_date', 'status', 'delivery_charges', 'transportation_cost', 'discount_amount', 'customer_deposit', 'notes']
         widgets = {
             'sales_type': forms.Select(attrs={'class': 'form-select'}),
             'order_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -104,11 +114,13 @@ class SalesOrderForm(forms.ModelForm):
             self.fields['status'].initial = 'order'
             self.fields['sales_type'].initial = 'regular'
             self.fields['delivery_charges'].initial = 0
+            self.fields['discount_amount'].initial = 0
             self.fields['customer_deposit'].initial = 0
         else:
             # For existing orders, always show the saved delivery_charges from database
             # Don't recalculate - respect the saved value (even if 0)
             self.fields['delivery_charges'].initial = self.instance.delivery_charges or Decimal('0')
+            self.fields['discount_amount'].initial = self.instance.discount_amount or Decimal('0')
             self.fields['customer_deposit'].initial = self.instance.customer_deposit or Decimal('0')
     
     def clean(self):

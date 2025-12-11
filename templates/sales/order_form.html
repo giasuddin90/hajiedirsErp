@@ -337,6 +337,22 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
+                            <label for="{{ form.discount_amount.id_for_label }}" class="form-label">
+                                <i class="bi bi-tag"></i> {{ form.discount_amount.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">৳</span>
+                                {{ form.discount_amount }}
+                            </div>
+                            {% if form.discount_amount.errors %}
+                                <div class="invalid-feedback d-block">{{ form.discount_amount.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Discount will be deducted from total amount</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
                             <label for="{{ form.customer_deposit.id_for_label }}" class="form-label">
                                 <i class="bi bi-cash-coin"></i> {{ form.customer_deposit.label }}
                             </label>
@@ -629,6 +645,17 @@ document.addEventListener('DOMContentLoaded', function() {
             updateTotalAmount();
         });
         deliveryChargesInput.addEventListener('change', function() {
+            updateTotalAmount();
+        });
+    }
+    
+    // Discount amount change
+    const discountAmountInput = document.getElementById('id_discount_amount');
+    if (discountAmountInput) {
+        discountAmountInput.addEventListener('input', function() {
+            updateTotalAmount();
+        });
+        discountAmountInput.addEventListener('change', function() {
             updateTotalAmount();
         });
     }
@@ -1258,6 +1285,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const transportationCostInput = document.getElementById('id_transportation_cost');
         const transportationCost = parseFloat(transportationCostInput?.value) || 0;
         
+        // Get discount amount
+        const discountAmountInput = document.getElementById('id_discount_amount');
+        const discountAmount = parseFloat(discountAmountInput?.value) || 0;
+        
         // Get manual delivery charges if set, otherwise use calculated
         const deliveryChargesInput = document.getElementById('id_delivery_charges');
         // Check if user has manually edited the field (even if set to 0)
@@ -1268,13 +1299,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Use manual value if user has edited the field (including 0), otherwise use calculated
         const finalDeliveryCharge = (isManuallyEdited && manualDeliveryCharge !== null) ? manualDeliveryCharge : totalDeliveryCharge;
         
-        // Calculate total amount
-        const total = subtotal + finalDeliveryCharge + transportationCost;
+        // Calculate total amount (subtotal + delivery + transportation - discount)
+        const total = subtotal + finalDeliveryCharge + transportationCost - discountAmount;
+        // Ensure total doesn't go negative
+        const finalTotal = Math.max(0, total);
         
         // Round to 2 decimal places
         subtotal = Math.round(subtotal * 100) / 100;
         totalDeliveryCharge = Math.round(totalDeliveryCharge * 100) / 100;
-        const finalTotal = Math.round(total * 100) / 100;
+        const roundedFinalTotal = Math.round(finalTotal * 100) / 100;
         
         // Update display fields
         const subtotalInput = document.getElementById('id_subtotal');
@@ -1292,7 +1325,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             // If user has manually set it (including 0), keep their value
         }
-        if (totalAmountInput) totalAmountInput.value = finalTotal.toFixed(2);
+        if (totalAmountInput) totalAmountInput.value = roundedFinalTotal.toFixed(2);
         
         // Update delivery breakdown display (use calculated value for breakdown, but form field may have manual value)
         updateDeliveryBreakdown(deliveryBreakdown, totalDeliveryCharge);
