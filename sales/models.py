@@ -27,6 +27,7 @@ class SalesOrder(models.Model):
     total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     delivery_charges = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Total delivery charges (auto-calculated, can be manually adjusted)")
     transportation_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Transportation cost for this order")
+    customer_deposit = models.DecimalField(max_digits=15, decimal_places=2, default=0, help_text="Customer deposit/advance payment for this order")
     notes = models.TextField(blank=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

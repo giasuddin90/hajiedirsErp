@@ -326,6 +326,22 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
+                            <label for="{{ form.customer_deposit.id_for_label }}" class="form-label">
+                                <i class="bi bi-cash-coin"></i> {{ form.customer_deposit.label }}
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">৳</span>
+                                {{ form.customer_deposit }}
+                            </div>
+                            {% if form.customer_deposit.errors %}
+                                <div class="invalid-feedback d-block">{{ form.customer_deposit.errors.0 }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">This will create a payment ledger entry for the customer</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
                             <label for="id_total_amount" class="form-label">Total Amount</label>
                             <div class="input-group">
                                 <span class="input-group-text">৳</span>

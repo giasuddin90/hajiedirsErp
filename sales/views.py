@@ -134,6 +134,57 @@ def create_customer_ledger_entry(order, user=None, update_existing=False):
         return ledger_entry
 
 
+def create_or_update_deposit_ledger_entry(order, deposit_amount, user=None, update_existing=False):
+    """
+    Create or update customer ledger entry for customer deposit payment
+    """
+    if not order.customer or not deposit_amount or deposit_amount <= 0:
+        return None
+    
+    # Check if deposit ledger entry already exists for this order
+    existing_entry = None
+    if update_existing:
+        existing_entry = CustomerLedger.objects.filter(
+            customer=order.customer,
+            reference=f"{order.order_number}-DEPOSIT",
+            transaction_type='payment'
+        ).first()
+    
+    description = f"Deposit/Advance payment for Sales Order {order.order_number}"
+    
+    if existing_entry:
+        # Update existing entry
+        old_amount = existing_entry.amount
+        existing_entry.amount = deposit_amount
+        existing_entry.description = description
+        existing_entry.transaction_date = timezone.now()
+        existing_entry.save()
+        
+        # Update customer balance (remove old amount, add new amount)
+        # Payment reduces customer balance (credit)
+        order.customer.current_balance = order.customer.current_balance + old_amount - deposit_amount
+        order.customer.save()
+        
+        return existing_entry
+    else:
+        # Create new ledger entry
+        ledger_entry = CustomerLedger.objects.create(
+            customer=order.customer,
+            transaction_type='payment',
+            amount=deposit_amount,
+            description=description,
+            reference=f"{order.order_number}-DEPOSIT",
+            transaction_date=timezone.now(),
+            created_by=user or order.created_by
+        )
+        
+        # Update customer balance (payment reduces balance - credit)
+        order.customer.current_balance -= deposit_amount
+        order.customer.save()
+        
+        return ledger_entry
+
+
 class SalesOrderListView(ListView):
     model = SalesOrder
     template_name = 'sales/order_list.html'
@@ -209,6 +260,10 @@ class SalesOrderCreateView(CreateView):
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
                     
+                    # Get customer deposit
+                    customer_deposit = form.cleaned_data.get('customer_deposit') or Decimal('0')
+                    self.object.customer_deposit = customer_deposit
+                    
                     # Total amount
                     total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
@@ -217,6 +272,9 @@ class SalesOrderCreateView(CreateView):
                     # Create customer ledger entry with full invoice details
                     if self.object.customer:
                         create_customer_ledger_entry(self.object, self.request.user)
+                        # Create deposit ledger entry if deposit amount > 0
+                        if customer_deposit > 0:
+                            create_or_update_deposit_ledger_entry(self.object, customer_deposit, self.request.user)
                     
                     items_count = self.object.items.count()
                     if items_count > 0:
@@ -331,6 +389,11 @@ class SalesOrderUpdateView(UpdateView):
                     # Get transportation cost
                     transportation_cost = self.object.transportation_cost or Decimal('0')
                     
+                    # Get customer deposit (handle both new and existing deposits)
+                    old_deposit = self.object.customer_deposit or Decimal('0')
+                    new_deposit = form.cleaned_data.get('customer_deposit') or Decimal('0')
+                    self.object.customer_deposit = new_deposit
+                    
                     # Total amount
                     total_amount = subtotal + delivery_charges + transportation_cost
                     self.object.total_amount = total_amount
@@ -339,6 +402,22 @@ class SalesOrderUpdateView(UpdateView):
                     # Update customer ledger entry with full invoice details
                     if self.object.customer:
                         create_customer_ledger_entry(self.object, self.request.user, update_existing=True)
+                        # Handle deposit ledger entry
+                        if new_deposit > 0:
+                            # Create or update deposit ledger entry
+                            create_or_update_deposit_ledger_entry(self.object, new_deposit, self.request.user, update_existing=True)
+                        elif old_deposit > 0 and new_deposit == 0:
+                            # If deposit was removed, delete the deposit ledger entry and reverse the balance
+                            existing_deposit_entry = CustomerLedger.objects.filter(
+                                customer=self.object.customer,
+                                reference=f"{self.object.order_number}-DEPOSIT",
+                                transaction_type='payment'
+                            ).first()
+                            if existing_deposit_entry:
+                                # Reverse the balance change
+                                self.object.customer.current_balance += old_deposit
+                                self.object.customer.save()
+                                existing_deposit_entry.delete()
                     
                     items_count = self.object.items.count()
                     messages.success(self.request, f"Sales order {self.object.order_number} updated successfully with {items_count} products! Total: ৳{total_amount}")
