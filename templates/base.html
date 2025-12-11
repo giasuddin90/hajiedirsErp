@@ -199,18 +199,23 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'receipt_list' %}active{% endif %}" href="{% url 'purchases:receipt_list' %}">
+                                <i class="bi bi-box-seam"></i> Goods Receipts
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'order_create' %}active{% endif %}" href="{% url 'purchases:order_create' %}">
                                 <i class="bi bi-plus-circle"></i> New Order
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'receipt_list' %}active{% endif %}" href="{% url 'purchases:receipt_list' %}">
-                                <i class="bi bi-box-arrow-in-down"></i> Goods Receipts
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'receipt_create' %}active{% endif %}" href="{% url 'purchases:receipt_create' %}">
+                                <i class="bi bi-plus-circle"></i> New Receipt
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'receipt_create' %}active{% endif %}" href="{% url 'purchases:receipt_create' %}">
-                                <i class="bi bi-plus-circle"></i> New Receipt
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'purchases' and request.resolver_match.url_name == 'purchase_supplier_report' %}active{% endif %}" href="{% url 'purchases:purchase_supplier_report' %}">
+                                <i class="bi bi-journal-text"></i> Goods Receipt Report
                             </a>
                         </li>
                     </ul>

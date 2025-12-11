@@ -1,55 +1,162 @@
 {% extends 'base.html' %}
 
-{% block page_title %}Supplier Purchase Report{% endblock %}
+{% block page_title %}Supplier Purchase & Goods Receipt Report{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <div class="card">
+        <div class="card mb-3">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="bi bi-truck"></i>
-                    Supplier Purchase Report
+                    <i class="bi bi-funnel"></i>
+                    Filter by Supplier
                 </h5>
             </div>
             <div class="card-body">
-                {% if reports %}
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label" for="supplier">
+                            <i class="bi bi-person-lines-fill"></i> Supplier
+                        </label>
+                        <select name="supplier" id="supplier" class="form-select" required>
+                            <option value="">-- Select Supplier --</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}" {% if supplier.id == selected_supplier_id %}selected{% endif %}>{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> View Report
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'purchases:purchase_supplier_report' %}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if selected_supplier %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info d-flex align-items-center justify-content-between">
+            <div>
+                <strong>Supplier:</strong> {{ selected_supplier.name }}
+            </div>
+            <div class="d-flex gap-3">
+                <span><strong>Total Orders:</strong> ৳{{ orders_total|floatformat:2 }}</span>
+                <span><strong>Total Goods Received:</strong> ৳{{ receipts_total|floatformat:2 }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-journal-text"></i>
+                    Order Items Ledger (Ordered vs Received)
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if order_items %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-sm table-hover">
                         <thead>
                             <tr>
-                                <th>Order Number</th>
-                                <th>Supplier</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Total Amount</th>
+                                <th>PO #</th>
+                                <th>Product</th>
+                                <th class="text-end">Ordered</th>
+                                <th class="text-end">Received</th>
+                                <th class="text-end">Remaining</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for order in reports %}
+                            {% for item in order_items %}
                             <tr>
-                                <td>{{ order.order_number }}</td>
-                                <td>{{ order.supplier.name }}</td>
-                                <td>{{ order.order_date|date:"M d, Y" }}</td>
-                                <td>
-                                    <span class="badge bg-{% if order.status == 'received' %}success{% elif order.status == 'sent' %}primary{% else %}warning{% endif %}">
-                                        {{ order.get_status_display }}
-                                    </span>
+                                <td>{{ item.purchase_order.order_number }}</td>
+                                <td>{{ item.product.name }}</td>
+                                <td class="text-end">{{ item.quantity|floatformat:2 }}</td>
+                                <td class="text-end">{{ item.get_received_quantity|floatformat:2 }}</td>
+                                <td class="text-end">
+                                    {{ item.get_remaining_quantity|floatformat:2 }}
                                 </td>
-                                <td>৳{{ order.total_amount|floatformat:2 }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 {% else %}
-                <div class="text-center py-4">
-                    <i class="bi bi-truck text-muted" style="font-size: 3rem;"></i>
-                    <p class="text-muted mt-3">No purchase orders found.</p>
+                <div class="text-center py-3 text-muted">
+                    No order items found for this supplier.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-clipboard-data"></i>
+                    Goods Receipt Items (Quantity Ledger)
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if receipt_items %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>GR #</th>
+                                <th>Product</th>
+                                <th class="text-end">Qty Received</th>
+                                <th>Warehouse</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in receipt_items %}
+                            <tr>
+                                <td>{{ item.goods_receipt.receipt_number }}</td>
+                                <td>{{ item.product.name }}</td>
+                                <td class="text-end">{{ item.quantity|floatformat:2 }}</td>
+                                <td>
+                                    {% if item.warehouse %}
+                                        {{ item.warehouse.name }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-3 text-muted">
+                    No goods receipt items found for this supplier.
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning d-flex align-items-center">
+            <i class="bi bi-info-circle me-2"></i>
+            Please select a supplier to view the report.
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

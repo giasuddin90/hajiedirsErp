@@ -208,15 +208,73 @@ class PurchaseMonthlyReportView(ListView):
 
 
 class PurchaseSupplierReportView(ListView):
+    """
+    Supplier-specific report showing all purchase orders and goods receipts.
+    """
     model = PurchaseOrder
-    template_name = 'purchases/reports/supplier_report.html'
+    template_name = 'purchases/purchase_supplier_report.html'
     context_object_name = 'orders'
     
     def get_queryset(self):
         supplier_id = self.request.GET.get('supplier')
+        if not supplier_id:
+            return PurchaseOrder.objects.none()
+        
+        return (
+            PurchaseOrder.objects.filter(supplier_id=supplier_id)
+            .select_related('supplier', 'created_by')
+            .order_by('-order_date', '-created_at')
+        )
+    
+    def get_context_data(self, **kwargs):
+        from django.db.models import Sum
+        
+        context = super().get_context_data(**kwargs)
+        supplier_id = self.request.GET.get('supplier')
+        
+        # Supplier list for the filter dropdown
+        context['suppliers'] = Supplier.objects.filter(is_active=True).order_by('name')
+        context['selected_supplier_id'] = int(supplier_id) if supplier_id else None
+        context['selected_supplier'] = None
+        
         if supplier_id:
-            return PurchaseOrder.objects.filter(supplier_id=supplier_id)
-        return PurchaseOrder.objects.none()
+            context['selected_supplier'] = Supplier.objects.filter(id=supplier_id).first()
+            
+            # Goods receipts for the selected supplier
+            receipts = (
+                GoodsReceipt.objects.filter(purchase_order__supplier_id=supplier_id)
+                .select_related('purchase_order', 'purchase_order__supplier', 'created_by')
+                .order_by('-receipt_date', '-created_at')
+            )
+            context['receipts'] = receipts
+            
+            # Order items with received/remaining quantities (ledger-style)
+            order_items = (
+                PurchaseOrderItem.objects.filter(purchase_order__supplier_id=supplier_id)
+                .select_related('purchase_order', 'product')
+                .order_by('-purchase_order__order_date', '-purchase_order__created_at')
+            )
+            context['order_items'] = order_items
+            
+            # Receipt items with quantities (ledger-style)
+            receipt_items = (
+                GoodsReceiptItem.objects.filter(goods_receipt__purchase_order__supplier_id=supplier_id)
+                .select_related('goods_receipt', 'goods_receipt__purchase_order', 'product', 'warehouse')
+                .order_by('-goods_receipt__receipt_date', '-goods_receipt__created_at')
+            )
+            context['receipt_items'] = receipt_items
+            
+            # Totals
+            context['orders_total'] = self.object_list.aggregate(total=Sum('total_amount'))['total'] or 0
+            context['receipts_total'] = receipts.aggregate(total=Sum('total_amount'))['total'] or 0
+        else:
+            context['receipts'] = GoodsReceipt.objects.none()
+            context['order_items'] = PurchaseOrderItem.objects.none()
+            context['receipt_items'] = GoodsReceiptItem.objects.none()
+            context['orders_total'] = 0
+            context['receipts_total'] = 0
+        
+        return context
 
 
 # Goods Receipt Views
