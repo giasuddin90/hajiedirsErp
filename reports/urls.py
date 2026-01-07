@@ -10,6 +10,8 @@ urlpatterns = [
     path('accounts-receivable/', views.AccountsReceivableReportView.as_view(), name='accounts_receivable'),
     path('profit-loss/', views.ProfitLossReportView.as_view(), name='profit_loss'),
     path('financial-flow/', views.FinancialFlowReportView.as_view(), name='financial_flow'),
+    path('labour-cost/', views.LabourCostReportView.as_view(), name='labour_cost'),
+    path('transportation-cost/', views.TransportationCostReportView.as_view(), name='transportation_cost'),
     
     # CSV Download URLs
     path('download/sales-csv/', views.download_sales_report_csv, name='download_sales_csv'),

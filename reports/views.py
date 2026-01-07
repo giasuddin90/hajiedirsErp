@@ -22,6 +22,7 @@ from customers.models import Customer, CustomerLedger
 from suppliers.models import SupplierLedger
 from expenses.models import Expense
 from core.utils import get_company_info
+from datetime import timedelta
 
 
 # ==================== REPORTS ====================
@@ -137,6 +138,110 @@ class TopSellingProductsReportView(LoginRequiredMixin, ListView):
             'total_revenue': total_revenue,  # New field name
             'average_price': average_price,
         })
+        return context
+
+
+class LabourCostReportView(LoginRequiredMixin, ListView):
+    """Labour/delivery charge by sales invoice with date filter."""
+    model = SalesOrder
+    template_name = 'reports/labour_cost_report.html'
+    context_object_name = 'orders'
+    
+    def get_queryset(self):
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
+        
+        if start_date_str:
+            start_date = parse_date(start_date_str)
+        else:
+            start_date = (timezone.now() - timedelta(days=30)).date()
+        
+        if end_date_str:
+            end_date = parse_date(end_date_str)
+        else:
+            end_date = timezone.now().date()
+        
+        qs = SalesOrder.objects.filter(
+            order_date__range=[start_date, end_date]
+        ).select_related('customer')
+        
+        return qs.order_by('-order_date', '-created_at')
+    
+    def get_context_data(self, **kwargs):
+        from django.db.models import Sum
+        
+        context = super().get_context_data(**kwargs)
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
+        
+        # defaults used in queryset
+        if start_date_str:
+            start_date = parse_date(start_date_str)
+        else:
+            start_date = (timezone.now() - timedelta(days=30)).date()
+        if end_date_str:
+            end_date = parse_date(end_date_str)
+        else:
+            end_date = timezone.now().date()
+        
+        context['start_date'] = start_date.strftime('%Y-%m-%d')
+        context['end_date'] = end_date.strftime('%Y-%m-%d')
+        context['total_labour_cost'] = self.object_list.aggregate(
+            total=Sum('delivery_charges')
+        )['total'] or Decimal('0')
+        context.update(get_company_info())
+        return context
+
+
+class TransportationCostReportView(LoginRequiredMixin, ListView):
+    """Transportation cost by sales invoice with date filter."""
+    model = SalesOrder
+    template_name = 'reports/transportation_cost_report.html'
+    context_object_name = 'orders'
+    
+    def get_queryset(self):
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
+        
+        if start_date_str:
+            start_date = parse_date(start_date_str)
+        else:
+            start_date = (timezone.now() - timedelta(days=30)).date()
+        
+        if end_date_str:
+            end_date = parse_date(end_date_str)
+        else:
+            end_date = timezone.now().date()
+        
+        qs = SalesOrder.objects.filter(
+            order_date__range=[start_date, end_date]
+        ).select_related('customer')
+        
+        return qs.order_by('-order_date', '-created_at')
+    
+    def get_context_data(self, **kwargs):
+        from django.db.models import Sum
+        
+        context = super().get_context_data(**kwargs)
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
+        
+        # defaults used in queryset
+        if start_date_str:
+            start_date = parse_date(start_date_str)
+        else:
+            start_date = (timezone.now() - timedelta(days=30)).date()
+        if end_date_str:
+            end_date = parse_date(end_date_str)
+        else:
+            end_date = timezone.now().date()
+        
+        context['start_date'] = start_date.strftime('%Y-%m-%d')
+        context['end_date'] = end_date.strftime('%Y-%m-%d')
+        context['total_transport_cost'] = self.object_list.aggregate(
+            total=Sum('transportation_cost')
+        )['total'] or Decimal('0')
+        context.update(get_company_info())
         return context
 
 

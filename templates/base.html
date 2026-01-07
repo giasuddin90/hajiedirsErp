@@ -275,6 +275,16 @@
                                 <i class="bi bi-arrow-left-right"></i> Financial Flow
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'labour_cost' %}active{% endif %}" href="{% url 'reports:labour_cost' %}">
+                                <i class="bi bi-people"></i> Labour Cost
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'transportation_cost' %}active{% endif %}" href="{% url 'reports:transportation_cost' %}">
+                                <i class="bi bi-bus-front"></i> Transport Cost
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>
