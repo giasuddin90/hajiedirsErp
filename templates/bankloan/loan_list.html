@@ -32,6 +32,8 @@
                         <th>Deal #</th>
                         <th>Bank Account</th>
                         <th>Principal</th>
+                        <th>Paid</th>
+                        <th>Left</th>
                         <th>Start Date</th>
                         <th>Status</th>
                         <th>Actions</th>
@@ -47,6 +49,8 @@
                         </td>
                         <td>{{ loan.bank_account.name|default:"-" }}</td>
                         <td>৳{{ loan.principal_amount|floatformat:0 }}</td>
+                        <td>৳{{ loan.paid_amount|default:0|floatformat:0 }}</td>
+                        <td>৳{{ loan.left_amount|default:0|floatformat:0 }}</td>
                         <td>{{ loan.start_date }}</td>
                         <td>
                             {% if loan.status == 'active' %}
@@ -71,7 +75,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             <i class="bi bi-inbox display-4 d-block mb-2"></i>
                             No loans found. <a href="{% url 'bankloan:loan_create' %}">Add your first loan</a>
                         </td>

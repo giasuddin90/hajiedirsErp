@@ -1,5 +1,8 @@
+from decimal import Decimal
+
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Sum, Case, When, DecimalField, Value
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import get_template
@@ -43,7 +46,46 @@ class CreditCardLoanListView(ListView):
     context_object_name = 'loans'
 
     def get_queryset(self):
-        return CreditCardLoan.objects.select_related('bank_account').order_by('-start_date', '-created_at')
+        return (
+            CreditCardLoan.objects.select_related('bank_account')
+            .annotate(
+                total_paid=Coalesce(
+                    Sum(
+                        Case(
+                            When(ledger_entries__entry_type='payment', then='ledger_entries__payment_amount'),
+                            default=Value(0),
+                            output_field=DecimalField(max_digits=15, decimal_places=2),
+                        )
+                    ),
+                    Value(Decimal('0.00'), output_field=DecimalField(max_digits=15, decimal_places=2)),
+                ),
+                total_disbursed=Coalesce(
+                    Sum(
+                        Case(
+                            When(ledger_entries__entry_type='disbursement', then='ledger_entries__payment_amount'),
+                            default=Value(0),
+                            output_field=DecimalField(max_digits=15, decimal_places=2),
+                        )
+                    ),
+                    Value(Decimal('0.00'), output_field=DecimalField(max_digits=15, decimal_places=2)),
+                ),
+            )
+            .order_by('-start_date', '-created_at')
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        loans = context.get('loans', [])
+
+        for loan in loans:
+            disbursed = loan.total_disbursed or loan.principal_amount
+            paid = loan.total_paid or Decimal('0.00')
+            left = disbursed - paid
+            loan.paid_amount = paid
+            loan.left_amount = left if left > 0 else Decimal('0.00')
+
+        context['loans'] = loans
+        return context
 
 
 class CreditCardLoanDetailView(DetailView):
