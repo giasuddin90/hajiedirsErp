@@ -120,6 +120,30 @@
             </small>
         </div>
     </div>
+
+    <!-- Active CC Loans -->
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-credit-card-2-front"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">{{ active_cc_loans|default:0 }}</h3>
+            <p>Active CC Loans</p>
+            <small class="text-primary">Open loan deals</small>
+        </div>
+    </div>
+
+    <!-- Interest Paid on Closed Loans -->
+    <div class="col-lg-3 col-md-6 mb-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="stats-card warning">
+            <div class="icon warning">
+                <i class="bi bi-percent"></i>
+            </div>
+            <h3 style="color: var(--warning-color);">৳{{ closed_loan_interest_paid|default:0|floatformat:0 }}</h3>
+            <p>Closed Loan Interest</p>
+            <small class="text-warning">Total interest paid</small>
+        </div>
+    </div>
 </div>
 
 <!-- Business Intelligence Tables -->
@@ -310,7 +334,9 @@ function exportDashboard() {
         ['Profit Margin', '{{ profit_margin|default:0 }}%'],
         ['Active Customers', '{{ total_customers|default:0 }}'],
         ['Active Suppliers', '{{ total_suppliers|default:0 }}'],
-        ['Total Products', '{{ total_products|default:0 }}']
+        ['Total Products', '{{ total_products|default:0 }}'],
+        ['Active CC Loans', '{{ active_cc_loans|default:0 }}'],
+        ['Closed Loan Interest', '৳{{ closed_loan_interest_paid|default:0|floatformat:0 }}']
     ];
     
     const csvContent = data.map(row => row.join(',')).join('\n');

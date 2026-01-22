@@ -243,6 +243,32 @@
                 </div>
             </li>
 
+            <!-- Banking -->
+            <li class="nav-item">
+                <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'bankloan' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#bankingSubmenu" aria-expanded="false">
+                    <i class="bi bi-bank"></i> Banking
+                </a>
+                <div class="collapse" id="bankingSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'bankloan' and request.resolver_match.url_name == 'account_list' %}active{% endif %}" href="{% url 'bankloan:account_list' %}">
+                                <i class="bi bi-wallet2"></i> Bank Accounts
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'bankloan' and request.resolver_match.url_name == 'loan_list' %}active{% endif %}" href="{% url 'bankloan:loan_list' %}">
+                                <i class="bi bi-credit-card"></i> CC Loans
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'bankloan' and request.resolver_match.url_name == 'loan_create' %}active{% endif %}" href="{% url 'bankloan:loan_create' %}">
+                                <i class="bi bi-plus-circle"></i> New Loan
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
             <!-- Reports -->
             <li class="nav-item">
                 <a class="nav-link dropdown-toggle {% if request.resolver_match.app_name == 'reports' %}active{% endif %}" href="#" data-bs-toggle="collapse" data-bs-target="#reportsSubmenu" aria-expanded="false">

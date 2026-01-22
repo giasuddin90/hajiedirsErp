@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Case, When, DecimalField
 from django.utils import timezone
 from datetime import datetime, timedelta
 from customers.models import Customer, CustomerLedger
@@ -11,6 +11,7 @@ from stock.models import Product, get_low_stock_products
 from sales.models import SalesOrder
 from purchases.models import PurchaseOrder
 from expenses.models import Expense
+from bankloan.models import CreditCardLoan
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -61,6 +62,29 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             expense_date__gte=this_month_start
         ).aggregate(total=Sum('amount'))['total'] or 0
         context['total_expenses'] = monthly_expenses
+
+        # Credit card loan metrics
+        context['active_cc_loans'] = CreditCardLoan.objects.filter(status='active').count()
+        closed_loans = CreditCardLoan.objects.filter(status='closed').annotate(
+            total_paid=Sum(
+                Case(
+                    When(ledger_entries__entry_type='payment', then='ledger_entries__payment_amount'),
+                    default=0,
+                    output_field=DecimalField(),
+                )
+            ),
+            total_disbursed=Sum(
+                Case(
+                    When(ledger_entries__entry_type='disbursement', then='ledger_entries__payment_amount'),
+                    default=0,
+                    output_field=DecimalField(),
+                )
+            ),
+        )
+        closed_interest_paid = sum(
+            max((loan.total_paid or 0) - (loan.total_disbursed or 0), 0) for loan in closed_loans
+        )
+        context['closed_loan_interest_paid'] = closed_interest_paid
         
         # Purchase metrics - use GoodsReceipt instead of PurchaseOrder status
         from purchases.models import GoodsReceipt
@@ -156,6 +180,25 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 @login_required
 def dashboard_redirect(request):
     """Redirect to dashboard after login"""
+    closed_loans = CreditCardLoan.objects.filter(status='closed').annotate(
+        total_paid=Sum(
+            Case(
+                When(ledger_entries__entry_type='payment', then='ledger_entries__payment_amount'),
+                default=0,
+                output_field=DecimalField(),
+            )
+        ),
+        total_disbursed=Sum(
+            Case(
+                When(ledger_entries__entry_type='disbursement', then='ledger_entries__payment_amount'),
+                default=0,
+                output_field=DecimalField(),
+            )
+        ),
+    )
+    closed_interest_paid = sum(
+        max((loan.total_paid or 0) - (loan.total_disbursed or 0), 0) for loan in closed_loans
+    )
     return render(request, 'dashboard.html', {
         'total_customers': Customer.objects.count(),
         'total_suppliers': Supplier.objects.count(),
@@ -163,4 +206,6 @@ def dashboard_redirect(request):
         'total_sales': SalesOrder.objects.filter(status='delivered').aggregate(total=Sum('total_amount'))['total'] or 0,
         'recent_orders': SalesOrder.objects.select_related('customer').order_by('-created_at')[:5],
         'low_stock_alerts': get_low_stock_products()[:5],
+        'active_cc_loans': CreditCardLoan.objects.filter(status='active').count(),
+        'closed_loan_interest_paid': closed_interest_paid,
     })

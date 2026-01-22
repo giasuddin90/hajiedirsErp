@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Loan {{ loan.deal_number }} - BuildERP{% endblock %}
+
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-credit-card"></i> Loan {{ loan.deal_number }}</h1>
+            <p class="text-muted mb-0">Track disbursements, payments, and interest</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'bankloan:loan_ledger_create' loan.pk %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Ledger Entry
+            </a>
+        <a href="{% url 'bankloan:loan_ledger_pdf' loan.pk %}" class="btn btn-outline-primary" target="_blank">
+            <i class="bi bi-download"></i> Download Ledger
+        </a>
+            <a href="{% url 'bankloan:loan_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Loans
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card info">
+            <div class="icon info">
+                <i class="bi bi-arrow-down-circle"></i>
+            </div>
+            <h3 style="color: var(--info-color);">৳{{ total_disbursed|floatformat:0 }}</h3>
+            <p>Total Disbursed</p>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card success">
+            <div class="icon success">
+                <i class="bi bi-arrow-up-circle"></i>
+            </div>
+            <h3 style="color: var(--success-color);">৳{{ total_principal_paid|floatformat:0 }}</h3>
+            <p>Principal Paid</p>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card warning">
+            <div class="icon warning">
+                <i class="bi bi-percent"></i>
+            </div>
+            <h3 style="color: var(--warning-color);">৳{{ total_interest_paid|floatformat:0 }}</h3>
+            <p>Extra Paid</p>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">৳{{ outstanding_principal|floatformat:0 }}</h3>
+            <p>Outstanding Principal</p>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <strong>Bank Account:</strong> {{ loan.bank_account.name|default:"-" }}
+            </div>
+            <div class="col-md-4">
+                <strong>Lender:</strong> {{ loan.lender_name|default:"-" }}
+            </div>
+            <div class="col-md-4">
+                <strong>Status:</strong>
+                {% if loan.status == 'active' %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-secondary">Closed</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-journal-text"></i> Loan Ledger
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in ledger_entries %}
+                    <tr>
+                        <td>{{ entry.transaction_date }}</td>
+                        <td>{{ entry.get_entry_type_display }}</td>
+                        <td>{{ entry.description|default:"-" }}</td>
+                        <td>৳{{ entry.payment_amount|floatformat:0 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            No ledger entries yet. Add the first payment or disbursement.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Credit Card Loans - BuildERP{% endblock %}
+
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-credit-card"></i> Credit Card Loans</h1>
+            <p class="text-muted mb-0">Track active and closed credit card loans</p>
+        </div>
+        <div>
+            <a href="{% url 'bankloan:loan_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Loan
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-list-ul"></i> Loan List
+            <span class="badge bg-primary ms-2">{{ loans|length }} Total</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Deal #</th>
+                        <th>Bank Account</th>
+                        <th>Principal</th>
+                        <th>Start Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loan in loans %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'bankloan:loan_detail' loan.pk %}" class="text-decoration-none fw-medium">
+                                {{ loan.deal_number }}
+                            </a>
+                        </td>
+                        <td>{{ loan.bank_account.name|default:"-" }}</td>
+                        <td>৳{{ loan.principal_amount|floatformat:0 }}</td>
+                        <td>{{ loan.start_date }}</td>
+                        <td>
+                            {% if loan.status == 'active' %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Closed</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'bankloan:loan_detail' loan.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'bankloan:loan_edit' loan.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'bankloan:loan_delete' loan.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                            No loans found. <a href="{% url 'bankloan:loan_create' %}">Add your first loan</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
