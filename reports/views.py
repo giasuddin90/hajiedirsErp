@@ -20,6 +20,8 @@ from purchases.models import PurchaseOrder, GoodsReceipt
 from stock.models import Product
 from customers.models import Customer, CustomerLedger
 from suppliers.models import SupplierLedger
+
+from bankloan.models import CreditCardLoanLedger
 from expenses.models import Expense
 from core.utils import get_company_info
 from datetime import timedelta
@@ -607,6 +609,23 @@ class FinancialFlowReportView(LoginRequiredMixin, ListView):
             payments=Count('id')
         ).order_by('-total')
 
+        # Inflow: CC loan disbursements
+        cc_disbursements_qs = CreditCardLoanLedger.objects.filter(
+            entry_type='disbursement',
+            transaction_date__range=[start_date, end_date]
+        ).select_related('loan')
+
+        total_cc_disbursement = cc_disbursements_qs.aggregate(
+            total=Sum('payment_amount')
+        )['total'] or Decimal('0')
+
+        inflow_by_cc_loan = cc_disbursements_qs.values('loan__deal_number').annotate(
+            total=Sum('payment_amount'),
+            entries=Count('id')
+        ).order_by('-total')
+
+        total_inflow += total_cc_disbursement
+
         # Outflow: Cash/Bank paid to suppliers (SupplierLedger with transaction_type='payment')
         supplier_payments_qs = SupplierLedger.objects.filter(
             transaction_type='payment',
@@ -619,6 +638,21 @@ class FinancialFlowReportView(LoginRequiredMixin, ListView):
         outflow_by_supplier = supplier_payments_qs.values('supplier__name').annotate(
             total=Sum('amount'),
             payments=Count('id')
+        ).order_by('-total')
+
+        # Outflow: CC loan payments
+        cc_payments_qs = CreditCardLoanLedger.objects.filter(
+            entry_type='payment',
+            transaction_date__range=[start_date, end_date]
+        ).select_related('loan')
+
+        total_cc_payments = cc_payments_qs.aggregate(
+            total=Sum('payment_amount')
+        )['total'] or Decimal('0')
+
+        outflow_by_cc_loan = cc_payments_qs.values('loan__deal_number').annotate(
+            total=Sum('payment_amount'),
+            entries=Count('id')
         ).order_by('-total')
 
         # Expenses by title (only paid expenses)
@@ -635,16 +669,20 @@ class FinancialFlowReportView(LoginRequiredMixin, ListView):
             count=Count('id')
         ).order_by('-total')
 
-        net_flow = total_inflow - (total_outflow_suppliers + total_expenses)
+        net_flow = total_inflow - (total_outflow_suppliers + total_cc_payments + total_expenses)
 
         context.update({
             'start_date': start_date,
             'end_date': end_date,
             'inflow_by_customer': inflow_by_customer,
+            'inflow_by_cc_loan': inflow_by_cc_loan,
             'outflow_by_supplier': outflow_by_supplier,
+            'outflow_by_cc_loan': outflow_by_cc_loan,
             'expenses_by_title': expenses_by_title,
             'total_inflow': total_inflow,
             'total_outflow_suppliers': total_outflow_suppliers,
+            'total_cc_disbursement': total_cc_disbursement,
+            'total_cc_payments': total_cc_payments,
             'total_expenses': total_expenses,
             'net_flow': net_flow,
             **get_company_info(),
@@ -703,6 +741,23 @@ def download_financial_flow_pdf(request):
         payments=Count('id')
     ).order_by('-total')
 
+    # Inflow: CC loan disbursements
+    cc_disbursements_qs = CreditCardLoanLedger.objects.filter(
+        entry_type='disbursement',
+        transaction_date__range=[start_date, end_date]
+    ).select_related('loan')
+
+    total_cc_disbursement = cc_disbursements_qs.aggregate(
+        total=Sum('payment_amount')
+    )['total'] or Decimal('0')
+
+    inflow_by_cc_loan = cc_disbursements_qs.values('loan__deal_number').annotate(
+        total=Sum('payment_amount'),
+        entries=Count('id')
+    ).order_by('-total')
+
+    total_inflow += total_cc_disbursement
+
     # Outflow: Cash/Bank paid to suppliers
     supplier_payments_qs = SupplierLedger.objects.filter(
         transaction_type='payment',
@@ -714,6 +769,21 @@ def download_financial_flow_pdf(request):
     outflow_by_supplier = supplier_payments_qs.values('supplier__name').annotate(
         total=Sum('amount'),
         payments=Count('id')
+    ).order_by('-total')
+
+    # Outflow: CC loan payments
+    cc_payments_qs = CreditCardLoanLedger.objects.filter(
+        entry_type='payment',
+        transaction_date__range=[start_date, end_date]
+    ).select_related('loan')
+
+    total_cc_payments = cc_payments_qs.aggregate(
+        total=Sum('payment_amount')
+    )['total'] or Decimal('0')
+
+    outflow_by_cc_loan = cc_payments_qs.values('loan__deal_number').annotate(
+        total=Sum('payment_amount'),
+        entries=Count('id')
     ).order_by('-total')
 
     # Expenses by title (only paid expenses)
@@ -729,17 +799,21 @@ def download_financial_flow_pdf(request):
         count=Count('id')
     ).order_by('-total')
 
-    net_flow = total_inflow - (total_outflow_suppliers + total_expenses)
+    net_flow = total_inflow - (total_outflow_suppliers + total_cc_payments + total_expenses)
 
     template = get_template('reports/financial_flow_pdf.html')
     context = {
         'start_date': start_date,
         'end_date': end_date,
         'inflow_by_customer': inflow_by_customer,
+        'inflow_by_cc_loan': inflow_by_cc_loan,
         'outflow_by_supplier': outflow_by_supplier,
+        'outflow_by_cc_loan': outflow_by_cc_loan,
         'expenses_by_title': expenses_by_title,
         'total_inflow': total_inflow,
         'total_outflow_suppliers': total_outflow_suppliers,
+        'total_cc_disbursement': total_cc_disbursement,
+        'total_cc_payments': total_cc_payments,
         'total_expenses': total_expenses,
         'net_flow': net_flow,
         **get_company_info(),

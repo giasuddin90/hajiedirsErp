@@ -88,6 +88,31 @@
     </div>
 </div>
 
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="card-module success">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">CC Disbursement</h6>
+                    <h3 class="card-module-value">৳{{ total_cc_disbursement|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon"><i class="bi bi-credit-card-2-front"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-module danger">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">CC Payments</h6>
+                    <h3 class="card-module-value">৳{{ total_cc_payments|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon"><i class="bi bi-credit-card"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-lg-6 mb-3">
         <div class="card">
@@ -154,6 +179,78 @@
                 </div>
                 {% else %}
                 <p class="text-muted mb-0">No cash/bank outflow records for this period.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-credit-card-2-front"></i> CC Loan Inflow (Disbursements)</h6>
+                <span class="badge bg-success">Inflow</span>
+            </div>
+            <div class="card-body">
+                {% if inflow_by_cc_loan %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Deal #</th>
+                                <th class="text-end">Entries</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in inflow_by_cc_loan %}
+                            <tr>
+                                <td>{{ row.loan__deal_number }}</td>
+                                <td class="text-end">{{ row.entries }}</td>
+                                <td class="text-end">৳{{ row.total|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No CC loan disbursements for this period.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-credit-card"></i> CC Loan Outflow (Payments)</h6>
+                <span class="badge bg-danger">Outflow</span>
+            </div>
+            <div class="card-body">
+                {% if outflow_by_cc_loan %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th>Deal #</th>
+                                <th class="text-end">Entries</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in outflow_by_cc_loan %}
+                            <tr>
+                                <td>{{ row.loan__deal_number }}</td>
+                                <td class="text-end">{{ row.entries }}</td>
+                                <td class="text-end">৳{{ row.total|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No CC loan payments for this period.</p>
                 {% endif %}
             </div>
         </div>

@@ -29,7 +29,7 @@
             <p>{{ company_address }}</p>
             <p>Phone: {{ company_phone }}</p>
             <h3>Cash/Bank Flow Report</h3>
-            <p style="color: #666; font-size: 11px;">Inflow: Customer Payments | Outflow: Supplier Payments & Expenses</p>
+            <p style="color: #666; font-size: 11px;">Inflow: Customer Payments & CC Disbursements | Outflow: Supplier Payments, CC Payments & Expenses</p>
         </div>
 
         <div class="meta">
@@ -45,6 +45,14 @@
             <div class="card">
                 <h4>Supplier Outflow</h4>
                 <div class="value">৳{{ total_outflow_suppliers|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>CC Disbursement</h4>
+                <div class="value">৳{{ total_cc_disbursement|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>CC Payments</h4>
+                <div class="value">৳{{ total_cc_payments|floatformat:2 }}</div>
             </div>
             <div class="card">
                 <h4>Expenses</h4>
@@ -102,6 +110,54 @@
         </table>
         {% else %}
         <p class="muted">No cash/bank outflow records for this period.</p>
+        {% endif %}
+
+        <h4>CC Loan Inflow (Disbursements)</h4>
+        {% if inflow_by_cc_loan %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Deal #</th>
+                    <th class="text-right">Entries</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in inflow_by_cc_loan %}
+                <tr>
+                    <td>{{ row.loan__deal_number }}</td>
+                    <td class="text-right">{{ row.entries }}</td>
+                    <td class="text-right">৳{{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No CC loan disbursements for this period.</p>
+        {% endif %}
+
+        <h4>CC Loan Outflow (Payments)</h4>
+        {% if outflow_by_cc_loan %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Deal #</th>
+                    <th class="text-right">Entries</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in outflow_by_cc_loan %}
+                <tr>
+                    <td>{{ row.loan__deal_number }}</td>
+                    <td class="text-right">{{ row.entries }}</td>
+                    <td class="text-right">৳{{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">No CC loan payments for this period.</p>
         {% endif %}
 
         <h4>Expenses by Title (Paid - Cash/Bank Outflow)</h4>
