@@ -20,6 +20,78 @@ class BankAccountListView(ListView):
     context_object_name = 'accounts'
 
 
+class BankAccountLedgerView(DetailView):
+    model = BankAccount
+    template_name = 'bankloan/bank_account_ledger.html'
+    context_object_name = 'account'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        account = self.object
+        loans = account.credit_card_loans.all().order_by('-start_date', '-created_at')
+
+        total_received = Decimal('0.00')
+        total_paid = Decimal('0.00')
+
+        for loan in loans:
+            loan.received_amount = loan.get_total_disbursed()
+            loan.paid_amount = loan.get_total_paid()
+            loan.left_amount = loan.get_outstanding_principal()
+            total_received += loan.received_amount
+            total_paid += loan.paid_amount
+
+        context.update({
+            'loans': loans,
+            'total_received': total_received,
+            'total_paid': total_paid,
+            'total_left': total_received - total_paid if total_received > total_paid else Decimal('0.00'),
+        })
+        return context
+
+
+def bank_account_ledger_pdf(request, pk):
+    account = get_object_or_404(BankAccount, pk=pk)
+    loans = account.credit_card_loans.all().order_by('-start_date', '-created_at')
+
+    total_received = Decimal('0.00')
+    total_paid = Decimal('0.00')
+
+    for loan in loans:
+        loan.received_amount = loan.get_total_disbursed()
+        loan.paid_amount = loan.get_total_paid()
+        loan.left_amount = loan.get_outstanding_principal()
+        total_received += loan.received_amount
+        total_paid += loan.paid_amount
+
+    context = {
+        'account': account,
+        'loans': loans,
+        'total_received': total_received,
+        'total_paid': total_paid,
+        'total_left': total_received - total_paid if total_received > total_paid else Decimal('0.00'),
+    }
+
+    template = get_template('bankloan/bank_account_ledger_pdf.html')
+    html = template.render(context)
+    try:
+        from weasyprint import HTML
+        from io import BytesIO
+
+        pdf_file = BytesIO()
+        HTML(string=html).write_pdf(pdf_file)
+        pdf_file.seek(0)
+
+        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="bank_ledger_{account.id}.pdf"'
+        return response
+    except ImportError:
+        response = HttpResponse(html, content_type='text/html')
+        response['Content-Disposition'] = f'attachment; filename="bank_ledger_{account.id}.html"'
+        return response
+    except Exception:
+        response = HttpResponse(html, content_type='text/html')
+        response['Content-Disposition'] = f'attachment; filename="bank_ledger_{account.id}.html"'
+        return response
 class BankAccountCreateView(CreateView):
     model = BankAccount
     form_class = BankAccountForm
@@ -188,9 +260,26 @@ def credit_card_loan_ledger_pdf(request, pk):
         'total_paid': loan.get_total_paid(),
         'extra_paid': loan.get_total_interest_paid(),
         'outstanding_principal': loan.get_outstanding_principal(),
-        **get_company_info(),
     }
 
     template = get_template('bankloan/loan_ledger_pdf.html')
     html = template.render(context)
-    return HttpResponse(html, content_type='text/html')
+    try:
+        from weasyprint import HTML
+        from io import BytesIO
+
+        pdf_file = BytesIO()
+        HTML(string=html).write_pdf(pdf_file)
+        pdf_file.seek(0)
+
+        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="cc_loan_ledger_{loan.deal_number}.pdf"'
+        return response
+    except ImportError:
+        response = HttpResponse(html, content_type='text/html')
+        response['Content-Disposition'] = f'attachment; filename="cc_loan_ledger_{loan.deal_number}.html"'
+        return response
+    except Exception:
+        response = HttpResponse(html, content_type='text/html')
+        response['Content-Disposition'] = f'attachment; filename="cc_loan_ledger_{loan.deal_number}.html"'
+        return response

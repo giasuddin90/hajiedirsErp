@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Ledger - {{ account.name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
+        .container { padding: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 15px; }
+        .header h2 { margin: 0; }
+        .meta { margin-bottom: 15px; }
+        .meta div { margin: 3px 0; }
+        .cards { display: flex; gap: 12px; margin-bottom: 15px; }
+        .card { flex: 1; border: 1px solid #ddd; padding: 10px; border-radius: 6px; }
+        .card h4 { margin: 0 0 6px 0; font-size: 12px; color: #555; }
+        .card .value { font-size: 16px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th, td { border: 1px solid #ddd; padding: 6px; font-size: 11px; }
+        th { background: #f5f5f5; text-align: left; }
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>{{ account.name }}</h2>
+            <p>{{ account.bank_name|default:"-" }}</p>
+            <p>Account #: {{ account.account_number|default:"-" }}</p>
+            <h3>Bank Ledger (CC Loans)</h3>
+        </div>
+
+        <div class="meta">
+            <div><strong>Status:</strong> {% if account.is_active %}Active{% else %}Inactive{% endif %}</div>
+            <div><strong>Generated:</strong> {{ "now"|date:"M d, Y H:i" }}</div>
+        </div>
+
+        <div class="cards">
+            <div class="card">
+                <h4>Total Received</h4>
+                <div class="value">৳{{ total_received|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>Total Paid</h4>
+                <div class="value">৳{{ total_paid|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>Total Left</h4>
+                <div class="value">৳{{ total_left|floatformat:2 }}</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Deal #</th>
+                    <th class="text-right">Received</th>
+                    <th class="text-right">Paid</th>
+                    <th class="text-right">Left</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for loan in loans %}
+                <tr>
+                    <td>{{ loan.deal_number }}</td>
+                    <td class="text-right">৳{{ loan.received_amount|floatformat:2 }}</td>
+                    <td class="text-right">৳{{ loan.paid_amount|floatformat:2 }}</td>
+                    <td class="text-right">৳{{ loan.left_amount|floatformat:2 }}</td>
+                    <td>{{ loan.status|title }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
+                        No CC loans found for this account.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

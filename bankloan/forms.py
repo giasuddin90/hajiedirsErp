@@ -73,7 +73,6 @@ class CreditCardLoanLedgerForm(forms.ModelForm):
         cleaned_data = super().clean()
         entry_type = cleaned_data.get('entry_type')
         payment_amount = cleaned_data.get('payment_amount') or Decimal('0.00')
-
         if entry_type == 'disbursement':
             if payment_amount <= 0:
                 self.add_error('payment_amount', 'Disbursement amount must be greater than 0.')
