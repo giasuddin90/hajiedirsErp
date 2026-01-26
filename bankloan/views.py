@@ -37,6 +37,7 @@ class BankAccountLedgerView(DetailView):
             loan.received_amount = loan.get_total_disbursed()
             loan.paid_amount = loan.get_total_paid()
             loan.left_amount = loan.get_outstanding_principal()
+            loan.interest_paid = loan.get_total_interest_paid()
             total_received += loan.received_amount
             total_paid += loan.paid_amount
 
@@ -60,6 +61,7 @@ def bank_account_ledger_pdf(request, pk):
         loan.received_amount = loan.get_total_disbursed()
         loan.paid_amount = loan.get_total_paid()
         loan.left_amount = loan.get_outstanding_principal()
+        loan.interest_paid = loan.get_total_interest_paid()
         total_received += loan.received_amount
         total_paid += loan.paid_amount
 
@@ -155,6 +157,7 @@ class CreditCardLoanListView(ListView):
             left = disbursed - paid
             loan.paid_amount = paid
             loan.left_amount = left if left > 0 else Decimal('0.00')
+            loan.interest_paid = loan.get_total_interest_paid()
 
         context['loans'] = loans
         return context

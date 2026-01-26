@@ -64,6 +64,7 @@
                         <th>Deal #</th>
                         <th>Received</th>
                         <th>Paid</th>
+                        <th>Interest Paid</th>
                         <th>Amount Left</th>
                         <th>Status</th>
                         <th>Actions</th>
@@ -75,6 +76,7 @@
                         <td>{{ loan.deal_number }}</td>
                         <td>৳{{ loan.received_amount|floatformat:0 }}</td>
                         <td>৳{{ loan.paid_amount|floatformat:0 }}</td>
+                        <td>৳{{ loan.interest_paid|floatformat:0 }}</td>
                         <td>৳{{ loan.left_amount|floatformat:0 }}</td>
                         <td>
                             {% if loan.status == 'active' %}
@@ -91,7 +93,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             No CC loans found for this account.
                         </td>
                     </tr>

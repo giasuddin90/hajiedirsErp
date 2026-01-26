@@ -57,6 +57,7 @@
                     <th>Deal #</th>
                     <th class="text-right">Received</th>
                     <th class="text-right">Paid</th>
+                    <th class="text-right">Interest Paid</th>
                     <th class="text-right">Left</th>
                     <th>Status</th>
                 </tr>
@@ -67,12 +68,13 @@
                     <td>{{ loan.deal_number }}</td>
                     <td class="text-right">৳{{ loan.received_amount|floatformat:2 }}</td>
                     <td class="text-right">৳{{ loan.paid_amount|floatformat:2 }}</td>
+                    <td class="text-right">৳{{ loan.interest_paid|floatformat:2 }}</td>
                     <td class="text-right">৳{{ loan.left_amount|floatformat:2 }}</td>
                     <td>{{ loan.status|title }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
+                    <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
                         No CC loans found for this account.
                     </td>
                 </tr>
