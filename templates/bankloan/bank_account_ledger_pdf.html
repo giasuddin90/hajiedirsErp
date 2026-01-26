@@ -20,6 +20,14 @@
         th, td { border: 1px solid #ddd; padding: 6px; font-size: 11px; }
         th { background: #f5f5f5; text-align: left; }
         .text-right { text-align: right; }
+        @media print {
+            body { margin: 0; padding: 0; font-size: 11px; }
+            .container { padding: 10px 15px; }
+            .cards { margin-bottom: 10px; }
+            table { margin-bottom: 10px; }
+            th, td { padding: 4px 6px; }
+            @page { margin: 0.4in; size: A4; }
+        }
     </style>
 </head>
 <body>
@@ -82,5 +90,10 @@
             </tbody>
         </table>
     </div>
+    <script>
+        window.onload = function() {
+            window.print();
+        }
+    </script>
 </body>
 </html>

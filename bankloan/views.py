@@ -75,25 +75,7 @@ def bank_account_ledger_pdf(request, pk):
 
     template = get_template('bankloan/bank_account_ledger_pdf.html')
     html = template.render(context)
-    try:
-        from weasyprint import HTML
-        from io import BytesIO
-
-        pdf_file = BytesIO()
-        HTML(string=html).write_pdf(pdf_file)
-        pdf_file.seek(0)
-
-        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="bank_ledger_{account.id}.pdf"'
-        return response
-    except ImportError:
-        response = HttpResponse(html, content_type='text/html')
-        response['Content-Disposition'] = f'attachment; filename="bank_ledger_{account.id}.html"'
-        return response
-    except Exception:
-        response = HttpResponse(html, content_type='text/html')
-        response['Content-Disposition'] = f'attachment; filename="bank_ledger_{account.id}.html"'
-        return response
+    return HttpResponse(html, content_type='text/html')
 class BankAccountCreateView(CreateView):
     model = BankAccount
     form_class = BankAccountForm
