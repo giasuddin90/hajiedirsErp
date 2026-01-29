@@ -102,7 +102,7 @@ class CreditCardLoanListView(ListView):
     context_object_name = 'loans'
 
     def get_queryset(self):
-        return (
+        queryset = (
             CreditCardLoan.objects.select_related('bank_account')
             .annotate(
                 total_paid=Coalesce(
@@ -128,10 +128,17 @@ class CreditCardLoanListView(ListView):
             )
             .order_by('-start_date', '-created_at')
         )
+        deal_number = self.request.GET.get('deal_number')
+        if deal_number:
+            queryset = queryset.filter(deal_number__icontains=deal_number.strip())
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         loans = context.get('loans', [])
+        active_count = 0
+        total_active_amount = Decimal('0.00')
+        total_active_left = Decimal('0.00')
 
         for loan in loans:
             disbursed = loan.total_disbursed or loan.principal_amount
@@ -140,8 +147,16 @@ class CreditCardLoanListView(ListView):
             loan.paid_amount = paid
             loan.left_amount = left if left > 0 else Decimal('0.00')
             loan.interest_paid = loan.get_total_interest_paid()
+            if loan.status == 'active':
+                active_count += 1
+                total_active_amount += disbursed
+                total_active_left += loan.left_amount
 
         context['loans'] = loans
+        context['deal_number_filter'] = self.request.GET.get('deal_number', '').strip()
+        context['active_loan_count'] = active_count
+        context['total_active_amount'] = total_active_amount
+        context['total_active_left'] = total_active_left
         return context
 
 

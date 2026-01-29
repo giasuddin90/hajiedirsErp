@@ -17,6 +17,35 @@
 {% endblock %}
 
 {% block content %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stats-card success">
+            <div class="icon success">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <h3 style="color: var(--success-color);">{{ active_loan_count }}</h3>
+            <p>Active Loans</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">৳{{ total_active_amount|floatformat:0 }}</h3>
+            <p>Total Active Amount</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stats-card danger">
+            <div class="icon danger">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <h3 style="color: var(--danger-color);">৳{{ total_active_left|floatformat:0 }}</h3>
+            <p>Payment Left</p>
+        </div>
+    </div>
+</div>
 <div class="card">
     <div class="card-header">
         <h5 class="mb-0">
@@ -25,6 +54,31 @@
         </h5>
     </div>
     <div class="card-body">
+        <form method="get" class="row g-2 align-items-end mb-3">
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <label for="deal-number-filter" class="form-label">Deal #</label>
+                <input
+                    type="text"
+                    name="deal_number"
+                    id="deal-number-filter"
+                    class="form-control"
+                    placeholder="Search deal number"
+                    value="{{ deal_number_filter }}"
+                >
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+            </div>
+            {% if deal_number_filter %}
+            <div class="col-auto">
+                <a href="{% url 'bankloan:loan_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+            </div>
+            {% endif %}
+        </form>
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
