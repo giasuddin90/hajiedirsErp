@@ -33,6 +33,20 @@
         .invoice-header .company-brand {
             margin-bottom: 10px;
         }
+        .invoice-header .company-meta {
+            margin-top: 6px;
+            font-size: 11px;
+            line-height: 1.4;
+            letter-spacing: 0.4px;
+        }
+        .invoice-header .company-meta .address {
+            opacity: 0.95;
+        }
+        .invoice-header .company-meta .phones {
+            margin-top: 4px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+        }
         .invoice-header .company-brand h2 {
             font-size: 28px;
             font-weight: 700;
@@ -57,6 +71,9 @@
             padding-bottom: 15px;
             border-bottom: 2px solid #e9ecef;
         }
+        .top-section.single {
+            display: block;
+        }
         .company-info, .customer-info {
             flex: 1;
             margin: 0 10px;
@@ -71,6 +88,42 @@
         }
         .customer-info {
             padding-left: 12px;
+        }
+        .customer-info.full {
+            padding-left: 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e1e6ea;
+            padding: 14px 16px;
+            position: relative;
+        }
+        .customer-info.full h3 {
+            margin-bottom: 10px;
+        }
+        .customer-info.full .label-pill {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            background: #2c3e50;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-bottom: 8px;
+        }
+        .customer-info.full .name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .customer-info.full .line {
+            font-size: 11px;
+            color: #495057;
+        }
+        .customer-info.full .phone {
+            font-weight: 600;
+            color: #2c3e50;
         }
         .company-info h3, .customer-info h3 {
             font-size: 14px;
@@ -309,7 +362,11 @@
         <!-- Header -->
         <div class="invoice-header">
             <div class="company-brand">
-                <h2>{{ company_name }}</h2>
+                <h2>HAJI IDRIS AND SONS</h2>
+                <div class="company-meta">
+                    <div class="address">ADDRESS: RISERV PUKUR UTTOR PAR, CHAIRMAN BARI SHAROK, BHANDARIA, PIROJPUR.</div>
+                    <div class="phones">PHONE: 01704-822220 | 01401-077666 | 01712-450013</div>
+                </div>
             </div>
             <h1>Invoice</h1>
         </div>
@@ -317,22 +374,16 @@
         <!-- Body -->
         <div class="invoice-body">
             <!-- Company and Customer Information -->
-            <div class="top-section">
-                <div class="company-info">
-                    <h3>Company Information</h3>
-                    <p class="company-name">{{ company_name }}</p>
-                    <p>{{ company_address }}</p>
-                    <p><strong>Phone:</strong> {{ company_phone }}</p>
-                </div>
-                <div class="customer-info">
-                    <h3>Bill To:</h3>
+            <div class="top-section single">
+                <div class="customer-info full">
+                    <div class="label-pill">Bill To</div>
                     {% if order.customer %}
-                        <p><strong>{{ order.customer.name }}</strong></p>
-                        <p>{{ order.customer.address|default:"Address not provided" }}</p>
-                        <p>Phone: {{ order.customer.phone|default:"Not provided" }}</p>
+                        <p class="name">{{ order.customer.name }}</p>
+                        <p class="line">{{ order.customer.address|default:"Address not provided" }}</p>
+                        <p class="line phone">Phone: {{ order.customer.phone|default:"Not provided" }}</p>
                     {% else %}
-                        <p><strong>{{ order.customer_name|default:"Anonymous Customer" }}</strong></p>
-                        <p>Instant Sale</p>
+                        <p class="name">{{ order.customer_name|default:"Anonymous Customer" }}</p>
+                        <p class="line">Instant Sale</p>
                     {% endif %}
                 </div>
             </div>
@@ -382,10 +433,9 @@
                 <thead>
                     <tr>
                         <th style="width: 40%;">Product</th>
-                        <th style="width: 15%;">Warehouse</th>
-                        <th style="width: 12%;">Qty</th>
-                        <th style="width: 16.5%;">Unit Price</th>
-                        <th style="width: 16.5%;">Total</th>
+                        <th style="width: 20%;">Qty</th>
+                        <th style="width: 20%;">Unit Price</th>
+                        <th style="width: 20%;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -407,13 +457,6 @@
                             <div style="font-size: 9px; color: #856404; font-style: italic; margin-top: 3px;">
                                 <strong>Note:</strong> {{ item_data.item.product_note }}
                             </div>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if item_data.item.warehouse %}
-                                <span style="font-weight: 600; color: #495057;">{{ item_data.item.warehouse.name }}</span>
-                            {% else %}
-                                <span style="color: #999; font-style: italic;">-</span>
                             {% endif %}
                         </td>
                         <td class="number-cell">{{ item_data.item.quantity|floatformat:0 }}</td>
