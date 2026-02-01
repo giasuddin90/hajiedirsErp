@@ -26,12 +26,34 @@
         .chalan-header {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
             color: white;
-            padding: 20px;
+            padding: 18px 20px;
             text-align: center;
             border-bottom: 4px solid #1e7e34;
         }
         .chalan-header .company-brand {
-            margin-bottom: 10px;
+            margin-bottom: 6px;
+        }
+        .chalan-header .company-meta {
+            margin-top: 4px;
+            font-size: 11px;
+            line-height: 1.4;
+            letter-spacing: 0.4px;
+        }
+        .chalan-header .company-meta .phones {
+            margin-top: 4px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+        }
+        .chalan-title {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            border-radius: 999px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
         }
         .chalan-header .company-brand h2 {
             font-size: 28px;
@@ -57,6 +79,9 @@
             padding-bottom: 15px;
             border-bottom: 2px solid #e9ecef;
         }
+        .top-section.single {
+            display: block;
+        }
         .company-info, .customer-info {
             flex: 1;
             margin: 0 10px;
@@ -71,6 +96,42 @@
         }
         .customer-info {
             padding-left: 12px;
+        }
+        .customer-info.full {
+            padding-left: 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e1e6ea;
+            padding: 14px 16px;
+            position: relative;
+        }
+        .customer-info.full h3 {
+            margin-bottom: 10px;
+        }
+        .customer-info.full .label-pill {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            background: #1e7e34;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-bottom: 8px;
+        }
+        .customer-info.full .name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .customer-info.full .line {
+            font-size: 11px;
+            color: #495057;
+        }
+        .customer-info.full .phone {
+            font-weight: 600;
+            color: #2c3e50;
         }
         .company-info h3, .customer-info h3 {
             font-size: 14px;
@@ -279,30 +340,27 @@
         <!-- Header -->
         <div class="chalan-header">
             <div class="company-brand">
-                <h2>{{ company_name }}</h2>
+                <h2>HAJI IDRIS AND SONS</h2>
+                <div class="company-meta">
+                    <div class="phones">PHONE: 01704-822220 | 01401-077666 | 01712-450013</div>
+                </div>
             </div>
-            <h1>Labour Chalan</h1>
+            <div class="chalan-title">CHALAN</div>
         </div>
         
         <!-- Body -->
         <div class="chalan-body">
             <!-- Company and Customer Information -->
-            <div class="top-section">
-                <div class="company-info">
-                    <h3>Company Information</h3>
-                    <p class="company-name">{{ company_name }}</p>
-                    <p>{{ company_address }}</p>
-                    <p><strong>Phone:</strong> {{ company_phone }}</p>
-                </div>
-                <div class="customer-info">
-                    <h3>Delivery To:</h3>
+            <div class="top-section single">
+                <div class="customer-info full">
+                    <div class="label-pill">Delivery To</div>
                     {% if order.customer %}
-                        <p><strong>{{ order.customer.name }}</strong></p>
-                        <p>{{ order.customer.address|default:"Address not provided" }}</p>
-                        <p>Phone: {{ order.customer.phone|default:"Not provided" }}</p>
+                        <p class="name">{{ order.customer.name }}</p>
+                        <p class="line">{{ order.customer.address|default:"Address not provided" }}</p>
+                        <p class="line phone">Phone: {{ order.customer.phone|default:"Not provided" }}</p>
                     {% else %}
-                        <p><strong>{{ order.customer_name|default:"Anonymous Customer" }}</strong></p>
-                        <p>Instant Sale</p>
+                        <p class="name">{{ order.customer_name|default:"Anonymous Customer" }}</p>
+                        <p class="line">Instant Sale</p>
                     {% endif %}
                 </div>
             </div>
