@@ -23,8 +23,10 @@ from suppliers.models import SupplierLedger
 
 from bankloan.models import BankAccount, BankAccountLedger, CreditCardLoanLedger
 from expenses.models import Expense
-from core.utils import get_company_info
+from core.utils import get_company_info, html_to_pdf_response
 from datetime import timedelta
+
+logger = logging.getLogger(__name__)
 
 
 # ==================== REPORTS ====================
@@ -856,33 +858,8 @@ def download_financial_flow_pdf(request):
         **get_company_info(),
     }
     html = template.render(context)
-
-    # Try to generate PDF using weasyprint, fallback to HTML if not available
-    try:
-        from weasyprint import HTML
-        from io import BytesIO
-        
-        pdf_file = BytesIO()
-        HTML(string=html).write_pdf(pdf_file)
-        pdf_file.seek(0)
-        
-        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="financial_flow_report_{start_date}_to_{end_date}.pdf"'
-        return response
-    except ImportError:
-        # If weasyprint is not installed, return HTML with instructions
-        from django.contrib import messages
-        messages.warning(request, "PDF generation requires weasyprint. Install it with: pip install weasyprint")
-        response = HttpResponse(html, content_type='text/html')
-        response['Content-Disposition'] = f'attachment; filename="financial_flow_report_{start_date}_to_{end_date}.html"'
-        return response
-    except Exception as e:
-        # If PDF generation fails, return HTML
-        from django.contrib import messages
-        messages.warning(request, f"PDF generation failed: {str(e)}. Returning HTML instead.")
-        response = HttpResponse(html, content_type='text/html')
-        response['Content-Disposition'] = f'attachment; filename="financial_flow_report_{start_date}_to_{end_date}.html"'
-        return response
+    filename = f"financial_flow_report_{start_date}_to_{end_date}.pdf"
+    return html_to_pdf_response(html, filename)
 
 
 # ==================== CSV DOWNLOAD VIEWS ====================
@@ -1202,23 +1179,8 @@ def download_bank_account_ledger_report_pdf(request):
     template = get_template('reports/bank_account_ledger_report_pdf.html')
     html = template.render(context)
 
-    try:
-        from weasyprint import HTML
-        from io import BytesIO
-
-        pdf_file = BytesIO()
-        HTML(string=html).write_pdf(pdf_file)
-        pdf_file.seek(0)
-
-        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-        response['Content-Disposition'] = (
-            f'attachment; filename="bank_ledger_report_{context["start_date"]}_to_{context["end_date"]}.pdf"'
-        )
-        return response
-    except ImportError:
-        return HttpResponse(html, content_type='text/html')
-    except Exception:
-        return HttpResponse(html, content_type='text/html')
+    filename = f'bank_ledger_report_{context["start_date"]}_to_{context["end_date"]}.pdf'
+    return html_to_pdf_response(html, filename)
 
 
 @login_required

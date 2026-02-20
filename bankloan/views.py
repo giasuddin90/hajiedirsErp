@@ -12,7 +12,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 
 from .forms import BankAccountForm, BankAccountLedgerForm, CreditCardLoanForm, CreditCardLoanLedgerForm
 from .models import BankAccount, BankAccountLedger, CreditCardLoan, CreditCardLoanLedger
-from core.utils import get_company_info
+from core.utils import get_company_info, html_to_pdf_response
 from core.mixins import StaffRequiredMixin, AdminRequiredMixin
 
 
@@ -427,18 +427,5 @@ def credit_card_loan_ledger_pdf(request, pk):
     template = get_template('bankloan/loan_ledger_pdf.html')
     html = template.render(context)
 
-    try:
-        from weasyprint import HTML
-        from io import BytesIO
-
-        pdf_file = BytesIO()
-        HTML(string=html).write_pdf(pdf_file)
-        pdf_file.seek(0)
-
-        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="cc_loan_ledger_{loan.deal_number}.pdf"'
-        return response
-    except ImportError:
-        return HttpResponse(html, content_type='text/html')
-    except Exception:
-        return HttpResponse(html, content_type='text/html')
+    filename = f"cc_loan_ledger_{loan.deal_number}.pdf"
+    return html_to_pdf_response(html, filename)
