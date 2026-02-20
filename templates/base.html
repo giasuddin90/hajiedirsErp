@@ -306,6 +306,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'bank_account_ledger_report' %}active{% endif %}" href="{% url 'reports:bank_account_ledger_report' %}">
+                                <i class="bi bi-bank"></i> Bank Ledger Report
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'labour_cost' %}active{% endif %}" href="{% url 'reports:labour_cost' %}">
                                 <i class="bi bi-people"></i> Labour Cost
                             </a>

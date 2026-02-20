@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Bank Account Ledger Report - BuildERP{% endblock %}
+{% block page_title %}Bank Account Ledger Report{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Filter Card -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-funnel"></i> Filter Transactions
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label" for="start_date">
+                            <i class="bi bi-calendar"></i> From Date
+                        </label>
+                        <input type="date" class="form-control" id="start_date" name="start_date"
+                               value="{{ start_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="end_date">
+                            <i class="bi bi-calendar-event"></i> To Date
+                        </label>
+                        <input type="date" class="form-control" id="end_date" name="end_date"
+                               value="{{ end_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="account">
+                            <i class="bi bi-bank"></i> Bank Account
+                        </label>
+                        <select class="form-select" id="account" name="account">
+                            <option value="">All Accounts</option>
+                            {% for acc in accounts %}
+                            <option value="{{ acc.pk }}" {% if account_filter == acc.pk|stringformat:"d" %}selected{% endif %}>
+                                {{ acc.name }} — {{ acc.bank_name|default:"" }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Filter
+                        </button>
+                        <a href="{% url 'reports:bank_account_ledger_report' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                        <a href="{% url 'reports:download_bank_ledger_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&account={{ account_filter }}"
+                           class="btn btn-outline-danger" title="Download PDF">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-journal-text"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">{{ total_entries }}</h3>
+            <p>Total Entries</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card success">
+            <div class="icon success">
+                <i class="bi bi-arrow-down-circle"></i>
+            </div>
+            <h3 style="color: var(--success-color);">৳{{ total_deposits|floatformat:0 }}</h3>
+            <p>Total Deposits</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card danger">
+            <div class="icon danger">
+                <i class="bi bi-arrow-up-circle"></i>
+            </div>
+            <h3 style="color: var(--danger-color);">৳{{ total_withdrawals|floatformat:0 }}</h3>
+            <p>Total Withdrawals</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card {% if net_amount >= 0 %}success{% else %}danger{% endif %}">
+            <div class="icon {% if net_amount >= 0 %}success{% else %}danger{% endif %}">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <h3 style="color: {% if net_amount >= 0 %}var(--success-color){% else %}var(--danger-color){% endif %};">৳{{ net_amount|floatformat:0 }}</h3>
+            <p>Net (Deposits − Withdrawals)</p>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-list-ul"></i> Transactions
+            <span class="badge bg-primary ms-2">{{ total_entries }}</span>
+        </h5>
+        <small class="text-muted">{{ start_date|date:"M d, Y" }} — {{ end_date|date:"M d, Y" }}</small>
+    </div>
+    <div class="card-body">
+        {% if rows %}
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Account</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th class="text-end">Deposit</th>
+                        <th class="text-end">Withdrawal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ row.entry.transaction_date|date:"M d, Y" }}</td>
+                        <td>{{ row.entry.bank_account.name }}{% if row.entry.bank_account.bank_name %} — {{ row.entry.bank_account.bank_name }}{% endif %}</td>
+                        <td>
+                            {% if row.entry.entry_type == 'deposit' %}
+                            <span class="badge bg-success">Deposit</span>
+                            {% else %}
+                            <span class="badge bg-danger">Withdrawal</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.entry.description|default:"-"|truncatewords:12 }}</td>
+                        <td class="text-end">
+                            {% if row.entry.entry_type == 'deposit' %}
+                            <span class="text-success fw-medium">৳{{ row.entry.amount|floatformat:2 }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if row.entry.entry_type == 'withdrawal' %}
+                            <span class="text-danger fw-medium">৳{{ row.entry.amount|floatformat:2 }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-dark">
+                        <td colspan="5" class="fw-bold">Total</td>
+                        <td class="text-end fw-bold text-success">৳{{ total_deposits|floatformat:2 }}</td>
+                        <td class="text-end fw-bold text-danger">৳{{ total_withdrawals|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
+            <p class="mt-2 mb-0">No transactions found for the selected date range.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

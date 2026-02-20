@@ -12,6 +12,7 @@ urlpatterns = [
     path('financial-flow/', views.FinancialFlowReportView.as_view(), name='financial_flow'),
     path('labour-cost/', views.LabourCostReportView.as_view(), name='labour_cost'),
     path('transportation-cost/', views.TransportationCostReportView.as_view(), name='transportation_cost'),
+    path('bank-ledger/', views.BankAccountLedgerReportView.as_view(), name='bank_account_ledger_report'),
     
     # CSV Download URLs
     path('download/sales-csv/', views.download_sales_report_csv, name='download_sales_csv'),
@@ -22,4 +23,5 @@ urlpatterns = [
     
     # PDF / printable downloads
     path('download/financial-flow/', views.download_financial_flow_pdf, name='download_financial_flow_pdf'),
+    path('download/bank-ledger-pdf/', views.download_bank_account_ledger_report_pdf, name='download_bank_ledger_pdf'),
 ]

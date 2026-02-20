@@ -21,7 +21,7 @@ from stock.models import Product
 from customers.models import Customer, CustomerLedger
 from suppliers.models import SupplierLedger
 
-from bankloan.models import CreditCardLoanLedger
+from bankloan.models import BankAccount, BankAccountLedger, CreditCardLoanLedger
 from expenses.models import Expense
 from core.utils import get_company_info
 from datetime import timedelta
@@ -1052,6 +1052,136 @@ def download_receivables_csv(request):
             ])
     
     return response
+
+
+class BankAccountLedgerReportView(LoginRequiredMixin, ListView):
+    """All bank account transactions with date filtering and PDF download."""
+    model = BankAccountLedger
+    template_name = 'reports/bank_account_ledger_report.html'
+    context_object_name = 'entries'
+
+    def _get_date_range(self):
+        start_str = self.request.GET.get('start_date', '').strip()
+        end_str = self.request.GET.get('end_date', '').strip()
+        start_date = parse_date(start_str) if start_str else (timezone.now() - timedelta(days=30)).date()
+        end_date = parse_date(end_str) if end_str else timezone.now().date()
+        if not start_date:
+            start_date = (timezone.now() - timedelta(days=30)).date()
+        if not end_date:
+            end_date = timezone.now().date()
+        return start_date, end_date
+
+    def get_queryset(self):
+        start_date, end_date = self._get_date_range()
+        qs = (
+            BankAccountLedger.objects
+            .filter(transaction_date__range=[start_date, end_date])
+            .select_related('bank_account', 'created_by')
+            .order_by('transaction_date', 'id')
+        )
+        account_id = self.request.GET.get('account', '').strip()
+        if account_id:
+            qs = qs.filter(bank_account_id=account_id)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        start_date, end_date = self._get_date_range()
+        entries = context['entries']
+
+        total_deposits = Decimal('0')
+        total_withdrawals = Decimal('0')
+        rows = []
+        for entry in entries:
+            if entry.entry_type == 'deposit':
+                total_deposits += entry.amount
+            else:
+                total_withdrawals += entry.amount
+            rows.append({'entry': entry})
+
+        context.update({
+            'start_date': start_date,
+            'end_date': end_date,
+            'rows': rows,
+            'total_deposits': total_deposits,
+            'total_withdrawals': total_withdrawals,
+            'net_amount': total_deposits - total_withdrawals,
+            'total_entries': len(rows),
+            'accounts': BankAccount.objects.filter(is_active=True).order_by('name'),
+            'account_filter': self.request.GET.get('account', ''),
+        })
+        return context
+
+
+def _build_bank_ledger_report_context(request):
+    """Shared helper that builds context for both the HTML view and PDF download."""
+    start_str = request.GET.get('start_date', '').strip()
+    end_str = request.GET.get('end_date', '').strip()
+    start_date = parse_date(start_str) if start_str else (timezone.now() - timedelta(days=30)).date()
+    end_date = parse_date(end_str) if end_str else timezone.now().date()
+    if not start_date:
+        start_date = (timezone.now() - timedelta(days=30)).date()
+    if not end_date:
+        end_date = timezone.now().date()
+
+    account_id = request.GET.get('account', '').strip()
+
+    entries_qs = (
+        BankAccountLedger.objects
+        .filter(transaction_date__range=[start_date, end_date])
+        .select_related('bank_account', 'created_by')
+        .order_by('transaction_date', 'id')
+    )
+    if account_id:
+        entries_qs = entries_qs.filter(bank_account_id=account_id)
+
+    total_deposits = Decimal('0')
+    total_withdrawals = Decimal('0')
+    rows = []
+    for entry in entries_qs:
+        if entry.entry_type == 'deposit':
+            total_deposits += entry.amount
+        else:
+            total_withdrawals += entry.amount
+        rows.append({'entry': entry})
+
+    return {
+        'start_date': start_date,
+        'end_date': end_date,
+        'rows': rows,
+        'total_deposits': total_deposits,
+        'total_withdrawals': total_withdrawals,
+        'net_amount': total_deposits - total_withdrawals,
+        'total_entries': len(rows),
+        'account_filter': account_id,
+        **get_company_info(),
+    }
+
+
+@login_required
+def download_bank_account_ledger_report_pdf(request):
+    """Download the bank account ledger report as PDF."""
+    context = _build_bank_ledger_report_context(request)
+    template = get_template('reports/bank_account_ledger_report_pdf.html')
+    html = template.render(context)
+
+    try:
+        from weasyprint import HTML
+        from io import BytesIO
+
+        pdf_file = BytesIO()
+        HTML(string=html).write_pdf(pdf_file)
+        pdf_file.seek(0)
+
+        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'attachment; filename="bank_ledger_report_{context["start_date"]}_to_{context["end_date"]}.pdf"'
+        )
+        return response
+    except ImportError:
+        return HttpResponse(html, content_type='text/html')
+    except Exception:
+        return HttpResponse(html, content_type='text/html')
 
 
 @login_required
