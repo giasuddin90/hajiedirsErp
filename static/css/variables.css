@@ -1,42 +1,42 @@
 :root {
-    /* Modern Color Palette */
+    /* Blue & Indigo B2B Palette */
     --primary-color: #3b82f6;
     --primary-dark: #1e40af;
     --primary-light: #dbeafe;
     --secondary-color: #6366f1;
-    --success-color: #10b981;
+    --success-color: #16a34a;
     --warning-color: #f59e0b;
     --danger-color: #ef4444;
-    --info-color: #06b6d4;
-    --dark-color: #8b5cf6;
+    --info-color: #0284c7;
+    --dark-color: #374151;
     
     /* Gradients */
     --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
     --secondary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --success-gradient: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    --info-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    --info-gradient: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
     
     /* Background Colors */
     --bg-primary: #ffffff;
-    --bg-secondary: #f8fafc;
-    --bg-tertiary: #f1f5f9;
-    --bg-dark: #1e293b;
-    --bg-sidebar: #f8f9fa;
+    --bg-secondary: #f9f8f5;
+    --bg-tertiary: #f5f5f4;
+    --bg-dark: #1c1917;
+    --bg-sidebar: #f5f3ee;
     
     /* Text Colors */
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --text-light: #94a3b8;
+    --text-primary: #1c1917;
+    --text-secondary: #57534e;
+    --text-muted: #78716c;
+    --text-light: #a8a29e;
     --text-white: #ffffff;
     
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-sm: 0 1px 2px 0 rgba(28, 25, 23, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(28, 25, 23, 0.08), 0 2px 4px -1px rgba(28, 25, 23, 0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(28, 25, 23, 0.08), 0 4px 6px -2px rgba(28, 25, 23, 0.04);
+    --shadow-xl: 0 20px 25px -5px rgba(28, 25, 23, 0.08), 0 10px 10px -5px rgba(28, 25, 23, 0.03);
     
     /* Border Radius */
     --radius-sm: 0.375rem;

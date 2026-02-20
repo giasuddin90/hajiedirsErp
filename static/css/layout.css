@@ -3,7 +3,7 @@
 /* Sidebar */
 .sidebar {
     background: var(--bg-sidebar);
-    border-right: 1px solid #e2e8f0;
+    border-right: 1px solid #e7e5e4;
     height: 100vh;
     position: fixed;
     top: 0;
@@ -43,7 +43,7 @@
 
 .sidebar-header {
     background: transparent;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 2px solid var(--primary-color);
     padding: var(--spacing-lg);
     position: relative;
 }
@@ -101,7 +101,7 @@
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
     padding: var(--spacing-sm);
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e7e5e4;
     position: relative;
     z-index: 1;
     transition: var(--transition-fast);
@@ -169,17 +169,20 @@
     display: flex;
     align-items: center;
     text-decoration: none;
+    border-left: 3px solid transparent;
 }
 
 .sidebar .nav-link:hover {
     background: var(--primary-light);
-    color: var(--primary-color);
+    color: var(--primary-dark);
     text-decoration: none;
 }
 
 .sidebar .nav-link.active {
-    background: var(--primary-color);
-    color: var(--text-white);
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border-left-color: var(--primary-color);
+    font-weight: var(--font-semibold);
 }
 
 .sidebar .nav-link i {
@@ -212,7 +215,7 @@
 }
 
 .sidebar .collapse {
-    background: rgba(0, 0, 0, 0.02);
+    background: rgba(120, 113, 108, 0.04);
     border-radius: var(--radius-md);
     margin: var(--spacing-xs) var(--spacing-md);
 }
@@ -224,17 +227,20 @@
     border-radius: var(--radius-sm);
     margin: var(--spacing-xs) 0;
     transition: var(--transition-fast);
+    border-left: 3px solid transparent;
 }
 
 .sidebar .submenu-link:hover {
     background: var(--primary-light);
-    color: var(--primary-color);
+    color: var(--primary-dark);
     text-decoration: none;
 }
 
 .sidebar .submenu-link.active {
-    background: var(--primary-color);
-    color: var(--text-white);
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border-left-color: var(--primary-color);
+    font-weight: var(--font-semibold);
 }
 
 .sidebar .submenu-link i {
@@ -259,7 +265,7 @@
 /* Page Header */
 .page-header {
     background: var(--bg-primary);
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e7e5e4;
     padding: var(--spacing-lg) var(--spacing-xl);
     margin-bottom: var(--spacing-xl);
     border-radius: var(--radius-lg);
