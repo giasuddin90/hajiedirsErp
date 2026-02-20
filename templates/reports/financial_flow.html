@@ -6,9 +6,10 @@
 {% block page_actions %}
 <a class="btn btn-danger d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" 
    href="{% url 'reports:download_financial_flow_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
-   title="Download Financial Flow report as PDF for {{ start_date|date:'M d, Y' }} – {{ end_date|date:'M d, Y' }}">
+   title="Download or print Financial Flow report for {{ start_date|date:'M d, Y' }} – {{ end_date|date:'M d, Y' }}"
+   target="_blank">
     <i class="bi bi-file-earmark-pdf fs-5"></i>
-    <span>Download PDF Report</span>
+    <span>Download PDF / Print</span>
 </a>
 {% endblock %}
 
@@ -35,8 +36,9 @@
                         </a>
                         <a href="{% url 'reports:download_financial_flow_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" 
                            class="btn btn-outline-danger d-inline-flex align-items-center gap-1" 
-                           title="Download this report as PDF for the selected period">
-                            <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                           title="Open report for print or save as PDF"
+                           target="_blank">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF / Print
                         </a>
                     </div>
                 </form>

@@ -50,8 +50,9 @@
                             <i class="bi bi-x-circle"></i> Clear
                         </a>
                         <a href="{% url 'reports:download_bank_ledger_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}&account={{ account_filter }}"
-                           class="btn btn-outline-danger" title="Download PDF">
-                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                           class="btn btn-outline-danger" title="Open for print or save as PDF"
+                           target="_blank">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF / Print
                         </a>
                     </div>
                 </form>

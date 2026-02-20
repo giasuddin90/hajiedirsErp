@@ -43,10 +43,21 @@ def html_to_pdf_response(html, filename, content_type='application/pdf'):
     except Exception as e:
         logger.warning("xhtml2pdf PDF failed: %s", e)
 
-    # 3. Return HTML so user can Print -> Save as PDF
+    # 3. Open report in browser and trigger print (user can choose "Save as PDF")
+    print_footer = '''
+    <style>@media print { .print-hint { display: none !important; } }</style>
+    <div class="print-hint" style="margin-top:20px;padding:12px;background:#e8f4fd;border:1px solid #b6d4fe;border-radius:6px;font-size:13px;">
+        Use <strong>Print (Ctrl+P)</strong> and choose "Save as PDF" to save.
+    </div>
+    <script>window.onload = function() { window.print(); };</script>
+    '''
+    if '</body>' in html:
+        html = html.replace('</body>', print_footer + '\n</body>')
+    else:
+        html = html + print_footer
+
     response = HttpResponse(html, content_type='text/html')
-    safe_name = filename.replace('.pdf', '.html')
-    response['Content-Disposition'] = f'attachment; filename="{safe_name}"'
+    response['Content-Disposition'] = 'inline'
     return response
 
 
