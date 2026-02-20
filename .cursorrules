@@ -1,7 +1,13 @@
 # Django ERP System - Cursor Rules
 
 ## Project Overview
-This is a minimal Django ERP (Enterprise Resource Planning) system focused on core business operations without banking, accounting, commission, or warehouse complexity.
+This is a Django ERP (Enterprise Resource Planning) system for **HAJI IDRIS AND SONS**, a building materials business located in Bhandaria, Pirojpur, Bangladesh. The system manages customers, suppliers, inventory, sales, purchases, expenses, and bank/credit-card loans.
+
+## Company Information
+- **Company Name**: HAJI IDRIS AND SONS
+- **Address**: RISERV PUKUR UTTOR PAR, CHAIRMAN BARI SHAROK, BHANDARIA, PIROJPUR.
+- **Phone Numbers**: 01704-822220 | 01401-077666 | 01712-450013
+- **Currency**: BDT (৳)
 
 ## Architecture
 - **Framework**: Django 5.2.7
@@ -12,21 +18,23 @@ This is a minimal Django ERP (Enterprise Resource Planning) system focused on co
 
 ## Core Modules
 - **customers**: Customer management and ledgers
-- **suppliers**: Supplier management and ledgers  
-- **stock**: Product and inventory management (single location)
-- **sales**: Sales orders, invoices, and payments
+- **suppliers**: Supplier management and ledgers
+- **stock**: Product and inventory management
+- **sales**: Sales orders, invoices, payments, A4 & POS (80mm) printing
 - **purchases**: Purchase orders, invoices, and payments
+- **expenses**: Business expense tracking with categories
+- **bankloan**: Bank accounts and credit-card loan management
 - **reports**: Business reports and analytics
 - **core**: Main Django settings and configuration
 
-## Removed Features
-- ❌ **Banking**: No bank accounts, transactions, or loans
-- ❌ **Accounting**: No trial balance, expenses, or income tracking
-- ❌ **Commissions**: No customer or supplier commission tracking
-- ❌ **Warehouses**: Single location inventory management only
-- ❌ **Pre-calculated Stock**: No Stock model - inventory calculated in real-time
-- ❌ **Stock Adjustments**: No manual stock adjustments - use purchase/sales orders
-- ❌ **Persisted Stock Alerts**: Alerts calculated dynamically, not stored in database
+## Printing & Invoices
+- **Invoice (A4)**: `templates/sales/invoice_pdf.html` — opens in browser, auto-print
+- **Chalan (A4)**: `templates/sales/labour_chalan.html` — delivery chalan, no price info
+- **Customer Ledger PDF**: `templates/customers/ledger_pdf.html` — auto-print
+- **Bank Account Ledger PDF**: `templates/bankloan/bank_account_ledger_pdf.html` — auto-print
+- **Loan Ledger PDF**: `templates/bankloan/loan_ledger_pdf.html`
+- All print templates use `window.print()` on load (no PDF library required)
+- Company header is hardcoded: HAJI IDRIS AND SONS + phone numbers
 
 ## Database Models
 
@@ -35,7 +43,7 @@ This is a minimal Django ERP (Enterprise Resource Planning) system focused on co
 - `CustomerLedger`: Transaction history
 - `CustomerCommitment`: Payment commitments
 
-### Suppliers  
+### Suppliers
 - `Supplier`: Supplier information and balances
 - `SupplierLedger`: Transaction history
 
@@ -56,13 +64,13 @@ This is a minimal Django ERP (Enterprise Resource Planning) system focused on co
   - Alerts appear when: `current_quantity ≤ min_stock_level` AND `min_stock_level > 0`
   - No database storage - computed in real-time
   - Available on dashboard and `/stock/alerts/` page
-- **Removed Models**: 
+- **Removed Models**:
   - `Stock` - removed, inventory calculated in real-time
   - `StockAlert` - removed, alerts calculated dynamically
   - `StockAdjustment` - removed, use purchase/sales orders for adjustments
 
 ### Sales
-- `SalesOrder`: Sales order header
+- `SalesOrder`: Sales order header (regular + instant sales)
 - `SalesOrderItem`: Order line items
 - `SalesInvoice`: Sales invoice header
 - `SalesInvoiceItem`: Invoice line items
@@ -81,7 +89,25 @@ This is a minimal Django ERP (Enterprise Resource Planning) system focused on co
 - `PurchaseReturnItem`: Return line items
 - `PurchasePayment`: Purchase payment tracking
 
-## Development Guidelines
+### Expenses
+- `ExpenseCategory`: Categories for business expenses
+- `Expense`: Expense records with amount, date, vendor, payment method, status
+
+### Bank & Loans
+- `BankAccount`: Bank account information (current, savings, credit card, loan)
+- `CreditCardLoan`: Credit card loan tracking with deal numbers, status, principal
+- `CreditCardLoanLedger`: Loan ledger entries (disbursement / payment)
+
+## Architecture & Conventions
+
+### Django Patterns
+- **Multi-app structure**: Each module has its own Django app (customers, suppliers, stock, sales, purchases, expenses, bankloan, reports)
+- **Class-based views**: Use CBVs (ListView, DetailView, CreateView, UpdateView, DeleteView) for CRUD operations
+- **Function-based views**: Use FBVs for complex business logic, printing, and PDF generation
+- **URL namespacing**: Each app uses `app_name`. Reference URLs as `sales:order_list`, `customers:customer_detail`, `bankloan:loan_list`, etc.
+- **ModelForms**: Forms use `ModelForm` with explicit widgets, labels, and Bootstrap classes (`form-control`, `form-select`)
+- **Soft-delete pattern**: Models use `is_active` boolean fields instead of hard deletes where applicable
+- **Ordering**: Models define `class Meta: ordering` for consistent query results
 
 ### Code Style
 - Follow Django best practices
@@ -98,10 +124,19 @@ This is a minimal Django ERP (Enterprise Resource Planning) system focused on co
 - **Important**: Always use real-time calculation from transactions (purchase/sales orders)
 
 ### Templates
+- **Template inheritance**: All pages extend `base.html` using `{% block content %}`
+- **Static files**: Reference with `{% static 'path' %}`. Always `{% load static %}` at the top
 - Use Bootstrap 5.3.2 for consistent styling
 - Follow the existing template structure in `templates/`
 - Use Django template tags and filters appropriately
 - Keep templates DRY (Don't Repeat Yourself)
+
+### Frontend & Styling
+- **Mobile-first**: CSS is written mobile-first. Breakpoints follow Bootstrap: 576px (sm), 768px (md), 992px (lg)
+- **Bootstrap classes**: Use Bootstrap 5 utility classes for layout. Custom CSS goes in `static/css/`
+- **Icons**: Use Bootstrap Icons (`bi-*` classes)
+- **No build step**: Static files are served directly. No webpack, no npm, no bundler
+- **Print templates**: Standalone HTML with inline CSS, `@media print` rules, and `window.print()` auto-trigger
 
 ### Views
 - Use class-based views for CRUD operations
@@ -117,15 +152,27 @@ This is a minimal Django ERP (Enterprise Resource Planning) system focused on co
 - Use namespaced URLs for each app
 - Keep URL patterns organized and readable
 
+## Important Rules
+1. **Never hardcode secrets** — `SECRET_KEY` in settings must use environment variables in production
+2. **Respect `is_active` flags** — Always filter with `.filter(is_active=True)` when querying for frontend display
+3. **Use `prefetch_related`/`select_related`** — Optimize queries when accessing related objects
+4. **CSRF protection** — All POST forms must include `{% csrf_token %}`
+5. **Print templates are standalone** — Print/PDF templates must NOT extend `base.html`; they are self-contained HTML with inline styles
+6. **Company info in print headers** — Always use hardcoded "HAJI IDRIS AND SONS" with phone numbers in print templates
+7. **POS templates** — POS (80mm) templates use `@page { size: 80mm auto; }` and compact styling
+8. **Real-time inventory only** — Never create models that store pre-calculated stock values
+
 ## File Structure
 ```
-miniErp/
+hajiedirsErp/
 ├── core/                   # Main Django settings
 ├── customers/             # Customer management
 ├── suppliers/             # Supplier management
 ├── stock/                 # Inventory management
-├── sales/                 # Sales management
+├── sales/                 # Sales management (A4 )
 ├── purchases/             # Purchase management
+├── expenses/              # Expense tracking
+├── bankloan/              # Bank accounts & CC loan management
 ├── reports/               # Reporting module
 ├── templates/             # HTML templates
 ├── static/                # Static files
@@ -156,20 +203,26 @@ python manage.py createsuperuser
 ```
 
 ## Key Features
-- ✅ Customer and Supplier management
+- ✅ Customer and Supplier management with ledgers
 - ✅ Product and inventory tracking (real-time calculation)
-- ✅ Sales order and invoice management
+- ✅ Sales order and invoice management (regular + instant sales)
 - ✅ Purchase order and invoice management
 - ✅ Payment tracking
+- ✅ Business expense tracking with categories
+- ✅ Bank account and credit-card loan management
 - ✅ Business reporting
 - ✅ Responsive Bootstrap UI
-- ✅ PDF invoice generation
+- ✅ Invoice printing: A4 and POS (80mm) formats
+- ✅ Labour Chalan printing: A4 and POS (80mm) formats
+- ✅ Customer ledger print (auto-print HTML)
+- ✅ Bank account ledger print (auto-print HTML)
 - ✅ Real-time inventory calculation (no pre-calculated values)
 - ✅ Dynamic low stock alerts based on min_stock_level
 
 ## Security Notes
+- Never hardcode secrets — use environment variables for production
 - Always validate user input
-- Use Django's CSRF protection
+- Use Django's CSRF protection on all forms
 - Implement proper authentication
 - Sanitize data before database operations
 - Use Django's built-in security features
