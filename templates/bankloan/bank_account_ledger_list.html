@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Account Ledgers - BuildERP{% endblock %}
+
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-journal-bookmark"></i> Account Ledgers</h1>
+            <p class="text-muted mb-0">Deposit, withdrawal & balance summary of all bank accounts</p>
+        </div>
+        <div>
+            <a href="{% url 'bankloan:account_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Bank Accounts
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-safe"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">৳{{ grand_opening|floatformat:0 }}</h3>
+            <p>Total Opening Balance</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card success">
+            <div class="icon success">
+                <i class="bi bi-arrow-down-circle"></i>
+            </div>
+            <h3 style="color: var(--success-color);">৳{{ grand_deposits|floatformat:0 }}</h3>
+            <p>Total Deposits</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card danger">
+            <div class="icon danger">
+                <i class="bi bi-arrow-up-circle"></i>
+            </div>
+            <h3 style="color: var(--danger-color);">৳{{ grand_withdrawals|floatformat:0 }}</h3>
+            <p>Total Withdrawals</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card {% if grand_balance >= 0 %}success{% else %}danger{% endif %}">
+            <div class="icon {% if grand_balance >= 0 %}success{% else %}danger{% endif %}">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <h3 style="color: {% if grand_balance >= 0 %}var(--success-color){% else %}var(--danger-color){% endif %};">৳{{ grand_balance|floatformat:0 }}</h3>
+            <p>Total Bank Balance</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-list-ul"></i> All Bank Accounts
+            <span class="badge bg-primary ms-2">{{ accounts|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Account Name</th>
+                        <th>Bank</th>
+                        <th>Type</th>
+                        <th class="text-end">Opening</th>
+                        <th class="text-end">Deposits</th>
+                        <th class="text-end">Withdrawals</th>
+                        <th class="text-end">Balance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in accounts %}
+                    <tr>
+                        <td class="fw-medium">{{ account.name }}</td>
+                        <td>{{ account.bank_name|default:"-" }}</td>
+                        <td><span class="badge bg-light text-dark">{{ account.get_account_type_display }}</span></td>
+                        <td class="text-end">৳{{ account.opening_balance|floatformat:0 }}</td>
+                        <td class="text-end text-success fw-medium">৳{{ account.total_deposits|floatformat:0 }}</td>
+                        <td class="text-end text-danger fw-medium">৳{{ account.total_withdrawals|floatformat:0 }}</td>
+                        <td class="text-end fw-bold">৳{{ account.balance|floatformat:0 }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'bankloan:account_transaction_ledger' account.pk %}" class="btn btn-sm btn-outline-success" title="View Ledger">
+                                    <i class="bi bi-journal-bookmark"></i> Ledger
+                                </a>
+                                <a href="{% url 'bankloan:account_ledger_entry_create' account.pk %}" class="btn btn-sm btn-outline-primary" title="Add Entry">
+                                    <i class="bi bi-plus-circle"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                            No active bank accounts found. <a href="{% url 'bankloan:account_create' %}">Add your first account</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if accounts %}
+                <tfoot>
+                    <tr class="table-dark">
+                        <td colspan="3" class="fw-bold">Grand Total</td>
+                        <td class="text-end fw-bold">৳{{ grand_opening|floatformat:0 }}</td>
+                        <td class="text-end fw-bold text-success">৳{{ grand_deposits|floatformat:0 }}</td>
+                        <td class="text-end fw-bold text-danger">৳{{ grand_withdrawals|floatformat:0 }}</td>
+                        <td class="text-end fw-bold">৳{{ grand_balance|floatformat:0 }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

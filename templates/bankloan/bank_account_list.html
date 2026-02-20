@@ -55,13 +55,16 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <a href="{% url 'bankloan:account_ledger' account.pk %}" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'bankloan:account_transaction_ledger' account.pk %}" class="btn btn-sm btn-outline-success" title="Transaction Ledger">
+                                    <i class="bi bi-journal-bookmark"></i>
+                                </a>
+                                <a href="{% url 'bankloan:account_ledger' account.pk %}" class="btn btn-sm btn-outline-primary" title="CC Loan Ledger">
                                     <i class="bi bi-journal-text"></i>
                                 </a>
-                                <a href="{% url 'bankloan:account_edit' account.pk %}" class="btn btn-sm btn-outline-secondary">
+                                <a href="{% url 'bankloan:account_edit' account.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'bankloan:account_delete' account.pk %}" class="btn btn-sm btn-outline-danger">
+                                <a href="{% url 'bankloan:account_delete' account.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </div>

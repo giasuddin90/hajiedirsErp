@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Ledger - {{ account.name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #333; }
+        .container { padding: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #444; padding-bottom: 10px; margin-bottom: 15px; }
+        .header h2 { margin: 0; font-size: 18px; }
+        .header h3 { margin: 4px 0 0; font-size: 14px; color: #555; }
+        .header p { margin: 2px 0; color: #666; font-size: 11px; }
+        .company { font-size: 16px; font-weight: bold; text-transform: uppercase; }
+        .meta { margin-bottom: 15px; }
+        .meta div { margin: 3px 0; }
+        .cards { display: flex; gap: 12px; margin-bottom: 15px; }
+        .card { flex: 1; border: 1px solid #ddd; padding: 10px; border-radius: 6px; text-align: center; }
+        .card h4 { margin: 0 0 4px 0; font-size: 11px; color: #555; text-transform: uppercase; }
+        .card .value { font-size: 16px; font-weight: 700; }
+        .card .value.green { color: #198754; }
+        .card .value.red { color: #dc3545; }
+        .card .value.blue { color: #0d6efd; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th, td { border: 1px solid #ddd; padding: 5px 8px; font-size: 11px; }
+        th { background: #f5f5f5; text-align: left; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-green { color: #198754; }
+        .text-red { color: #dc3545; }
+        .fw-bold { font-weight: 700; }
+        .opening-row { background: #f8f9fa; }
+        tfoot tr { background: #343a40; color: #fff; font-weight: 700; }
+        tfoot .text-green { color: #75b798; }
+        tfoot .text-red { color: #ea868f; }
+        @media print {
+            body { margin: 0; padding: 0; font-size: 11px; }
+            .container { padding: 10px 15px; }
+            .cards { margin-bottom: 10px; }
+            table { margin-bottom: 10px; }
+            th, td { padding: 4px 6px; }
+            @page { margin: 0.4in; size: A4; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="company">HAJI IDRIS AND SONS</div>
+            <p>01704-822220 | 01401-077666 | 01712-450013</p>
+            <h2>{{ account.name }}</h2>
+            <p>{{ account.bank_name|default:"" }} {% if account.account_number %}| Account #: {{ account.account_number }}{% endif %}</p>
+            <h3>Transaction Ledger</h3>
+        </div>
+
+        <div class="meta">
+            <div><strong>Account Type:</strong> {{ account.get_account_type_display }}</div>
+            <div><strong>Status:</strong> {% if account.is_active %}Active{% else %}Inactive{% endif %}</div>
+            <div><strong>Generated:</strong> {{ "now"|date:"M d, Y H:i" }}</div>
+        </div>
+
+        <div class="cards">
+            <div class="card">
+                <h4>Opening Balance</h4>
+                <div class="value blue">৳{{ account.opening_balance|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>Total Deposits</h4>
+                <div class="value green">৳{{ total_deposits|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>Total Withdrawals</h4>
+                <div class="value red">৳{{ total_withdrawals|floatformat:2 }}</div>
+            </div>
+            <div class="card">
+                <h4>Current Balance</h4>
+                <div class="value {% if current_balance >= 0 %}green{% else %}red{% endif %}">৳{{ current_balance|floatformat:2 }}</div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th class="text-right">Deposit</th>
+                    <th class="text-right">Withdrawal</th>
+                    <th class="text-right">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="opening-row">
+                    <td></td>
+                    <td>—</td>
+                    <td><em>Opening Balance</em></td>
+                    <td class="text-right">—</td>
+                    <td class="text-right">—</td>
+                    <td class="text-right fw-bold">৳{{ account.opening_balance|floatformat:2 }}</td>
+                </tr>
+                {% for row in ledger_rows %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ row.entry.transaction_date|date:"M d, Y" }}</td>
+                    <td>{{ row.entry.description|default:"-" }}</td>
+                    <td class="text-right">
+                        {% if row.entry.entry_type == 'deposit' %}
+                            <span class="text-green">৳{{ row.entry.amount|floatformat:2 }}</span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        {% if row.entry.entry_type == 'withdrawal' %}
+                            <span class="text-red">৳{{ row.entry.amount|floatformat:2 }}</span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-right fw-bold">৳{{ row.balance|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center" style="padding: 20px; color: #666;">
+                        No transactions recorded.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if ledger_rows %}
+            <tfoot>
+                <tr>
+                    <td colspan="3">Total</td>
+                    <td class="text-right text-green">৳{{ total_deposits|floatformat:2 }}</td>
+                    <td class="text-right text-red">৳{{ total_withdrawals|floatformat:2 }}</td>
+                    <td class="text-right">৳{{ current_balance|floatformat:2 }}</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+    <script>
+        window.onload = function() {
+            window.print();
+        }
+    </script>
+</body>
+</html>

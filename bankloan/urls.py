@@ -6,9 +6,14 @@ app_name = 'bankloan'
 
 urlpatterns = [
     path('accounts/', views.BankAccountListView.as_view(), name='account_list'),
+    path('accounts/ledgers/', views.BankAccountLedgerListView.as_view(), name='account_ledger_list'),
     path('accounts/new/', views.BankAccountCreateView.as_view(), name='account_create'),
     path('accounts/<int:pk>/', views.BankAccountLedgerView.as_view(), name='account_ledger'),
     path('accounts/<int:pk>/ledger/pdf/', views.bank_account_ledger_pdf, name='account_ledger_pdf'),
+    path('accounts/<int:pk>/transactions/', views.BankAccountTransactionLedgerView.as_view(), name='account_transaction_ledger'),
+    path('accounts/<int:pk>/transactions/new/', views.BankAccountLedgerEntryCreateView.as_view(), name='account_ledger_entry_create'),
+    path('accounts/<int:pk>/transactions/pdf/', views.bank_account_transaction_ledger_pdf, name='account_transaction_ledger_pdf'),
+    path('accounts/ledger-entry/<int:pk>/delete/', views.BankAccountLedgerEntryDeleteView.as_view(), name='account_ledger_entry_delete'),
     path('accounts/<int:pk>/edit/', views.BankAccountUpdateView.as_view(), name='account_edit'),
     path('accounts/<int:pk>/delete/', views.BankAccountDeleteView.as_view(), name='account_delete'),
     path('loans/', views.CreditCardLoanListView.as_view(), name='loan_list'),

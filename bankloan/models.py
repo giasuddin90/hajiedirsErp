@@ -28,10 +28,63 @@ class BankAccount(models.Model):
     def __str__(self):
         return f"{self.name} - {self.bank_name}" if self.bank_name else self.name
 
+    def get_total_deposits(self):
+        return self.ledger_entries.filter(entry_type='deposit').aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+    def get_total_withdrawals(self):
+        return self.ledger_entries.filter(entry_type='withdrawal').aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+    def get_calculated_balance(self):
+        return self.opening_balance + self.get_total_deposits() - self.get_total_withdrawals()
+
+    def update_balance(self):
+        self.current_balance = self.get_calculated_balance()
+        self.save(update_fields=['current_balance'])
+
     class Meta:
         verbose_name = "Bank Account"
         verbose_name_plural = "Bank Accounts"
         ordering = ['name']
+
+
+class BankAccountLedger(models.Model):
+    ENTRY_TYPES = [
+        ('deposit', 'Deposit'),
+        ('withdrawal', 'Withdrawal'),
+    ]
+
+    bank_account = models.ForeignKey(
+        'BankAccount',
+        on_delete=models.CASCADE,
+        related_name='ledger_entries',
+    )
+    entry_type = models.CharField(max_length=20, choices=ENTRY_TYPES)
+    transaction_date = models.DateField(default=timezone.now)
+    description = models.TextField(blank=True)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.bank_account.name} - {self.get_entry_type_display()} - ৳{self.amount}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.bank_account.update_balance()
+
+    def delete(self, *args, **kwargs):
+        account = self.bank_account
+        super().delete(*args, **kwargs)
+        account.update_balance()
+
+    class Meta:
+        verbose_name = "Bank Account Ledger"
+        verbose_name_plural = "Bank Account Ledgers"
+        ordering = ['-transaction_date', '-id']
 
 
 class CreditCardLoan(models.Model):

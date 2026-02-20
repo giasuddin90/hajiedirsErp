@@ -9,8 +9,8 @@ from django.template.loader import get_template
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
-from .forms import BankAccountForm, CreditCardLoanForm, CreditCardLoanLedgerForm
-from .models import BankAccount, CreditCardLoan, CreditCardLoanLedger
+from .forms import BankAccountForm, BankAccountLedgerForm, CreditCardLoanForm, CreditCardLoanLedgerForm
+from .models import BankAccount, BankAccountLedger, CreditCardLoan, CreditCardLoanLedger
 from core.utils import get_company_info
 
 
@@ -18,6 +18,60 @@ class BankAccountListView(ListView):
     model = BankAccount
     template_name = 'bankloan/bank_account_list.html'
     context_object_name = 'accounts'
+
+
+class BankAccountLedgerListView(ListView):
+    model = BankAccount
+    template_name = 'bankloan/bank_account_ledger_list.html'
+    context_object_name = 'accounts'
+
+    def get_queryset(self):
+        return BankAccount.objects.filter(is_active=True).annotate(
+            total_deposits=Coalesce(
+                Sum(
+                    Case(
+                        When(ledger_entries__entry_type='deposit', then='ledger_entries__amount'),
+                        default=Value(0),
+                        output_field=DecimalField(max_digits=15, decimal_places=2),
+                    )
+                ),
+                Value(Decimal('0.00'), output_field=DecimalField(max_digits=15, decimal_places=2)),
+            ),
+            total_withdrawals=Coalesce(
+                Sum(
+                    Case(
+                        When(ledger_entries__entry_type='withdrawal', then='ledger_entries__amount'),
+                        default=Value(0),
+                        output_field=DecimalField(max_digits=15, decimal_places=2),
+                    )
+                ),
+                Value(Decimal('0.00'), output_field=DecimalField(max_digits=15, decimal_places=2)),
+            ),
+        ).order_by('name')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        accounts = context['accounts']
+
+        grand_opening = Decimal('0.00')
+        grand_deposits = Decimal('0.00')
+        grand_withdrawals = Decimal('0.00')
+        grand_balance = Decimal('0.00')
+
+        for acc in accounts:
+            acc.balance = acc.opening_balance + acc.total_deposits - acc.total_withdrawals
+            grand_opening += acc.opening_balance
+            grand_deposits += acc.total_deposits
+            grand_withdrawals += acc.total_withdrawals
+            grand_balance += acc.balance
+
+        context.update({
+            'grand_opening': grand_opening,
+            'grand_deposits': grand_deposits,
+            'grand_withdrawals': grand_withdrawals,
+            'grand_balance': grand_balance,
+        })
+        return context
 
 
 class BankAccountLedgerView(DetailView):
@@ -94,6 +148,102 @@ class BankAccountDeleteView(DeleteView):
     model = BankAccount
     template_name = 'bankloan/bank_account_confirm_delete.html'
     success_url = reverse_lazy('bankloan:account_list')
+
+
+class BankAccountTransactionLedgerView(DetailView):
+    model = BankAccount
+    template_name = 'bankloan/bank_account_transaction_ledger.html'
+    context_object_name = 'account'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        account = self.object
+        entries = account.ledger_entries.all().order_by('transaction_date', 'id')
+
+        running_balance = account.opening_balance
+        ledger_rows = []
+        for entry in entries:
+            if entry.entry_type == 'deposit':
+                running_balance += entry.amount
+            else:
+                running_balance -= entry.amount
+            ledger_rows.append({
+                'entry': entry,
+                'balance': running_balance,
+            })
+
+        context.update({
+            'ledger_rows': ledger_rows,
+            'total_deposits': account.get_total_deposits(),
+            'total_withdrawals': account.get_total_withdrawals(),
+            'current_balance': account.get_calculated_balance(),
+        })
+        return context
+
+
+class BankAccountLedgerEntryCreateView(CreateView):
+    model = BankAccountLedger
+    form_class = BankAccountLedgerForm
+    template_name = 'bankloan/bank_account_ledger_entry_form.html'
+
+    def get_success_url(self):
+        return reverse_lazy('bankloan:account_transaction_ledger', kwargs={'pk': self.kwargs['pk']})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['account'] = get_object_or_404(BankAccount, pk=self.kwargs['pk'])
+        return context
+
+    def form_valid(self, form):
+        account = get_object_or_404(BankAccount, pk=self.kwargs['pk'])
+        form.instance.bank_account = account
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f'{form.instance.get_entry_type_display()} of ৳{form.instance.amount} recorded.')
+        return response
+
+
+class BankAccountLedgerEntryDeleteView(DeleteView):
+    model = BankAccountLedger
+    template_name = 'bankloan/bank_account_ledger_entry_confirm_delete.html'
+    context_object_name = 'entry'
+
+    def get_success_url(self):
+        return reverse_lazy('bankloan:account_transaction_ledger', kwargs={'pk': self.object.bank_account.pk})
+
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, 'Ledger entry deleted successfully.')
+        return response
+
+
+def bank_account_transaction_ledger_pdf(request, pk):
+    account = get_object_or_404(BankAccount, pk=pk)
+    entries = account.ledger_entries.all().order_by('transaction_date', 'id')
+
+    running_balance = account.opening_balance
+    ledger_rows = []
+    for entry in entries:
+        if entry.entry_type == 'deposit':
+            running_balance += entry.amount
+        else:
+            running_balance -= entry.amount
+        ledger_rows.append({
+            'entry': entry,
+            'balance': running_balance,
+        })
+
+    context = {
+        'account': account,
+        'ledger_rows': ledger_rows,
+        'total_deposits': account.get_total_deposits(),
+        'total_withdrawals': account.get_total_withdrawals(),
+        'current_balance': account.get_calculated_balance(),
+    }
+
+    template = get_template('bankloan/bank_account_transaction_ledger_pdf.html')
+    html = template.render(context)
+    return HttpResponse(html, content_type='text/html')
 
 
 class CreditCardLoanListView(ListView):

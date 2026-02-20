@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django import forms
 
-from .models import BankAccount, CreditCardLoan, CreditCardLoanLedger
+from .models import BankAccount, BankAccountLedger, CreditCardLoan, CreditCardLoanLedger
 
 
 class BankAccountForm(forms.ModelForm):
@@ -14,7 +14,6 @@ class BankAccountForm(forms.ModelForm):
             'account_number',
             'account_type',
             'opening_balance',
-            'current_balance',
             'is_active',
         ]
         widgets = {
@@ -23,9 +22,37 @@ class BankAccountForm(forms.ModelForm):
             'account_number': forms.TextInput(attrs={'class': 'form-control'}),
             'account_type': forms.Select(attrs={'class': 'form-select'}),
             'opening_balance': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'current_balance': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def save(self, commit=True):
+        instance = super().save(commit=commit)
+        if commit:
+            instance.update_balance()
+        return instance
+
+
+class BankAccountLedgerForm(forms.ModelForm):
+    class Meta:
+        model = BankAccountLedger
+        fields = [
+            'entry_type',
+            'transaction_date',
+            'description',
+            'amount',
+        ]
+        widgets = {
+            'entry_type': forms.Select(attrs={'class': 'form-select'}),
+            'transaction_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'description': forms.TextInput(attrs={'class': 'form-control'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+    def clean_amount(self):
+        amount = self.cleaned_data.get('amount') or Decimal('0.00')
+        if amount <= 0:
+            raise forms.ValidationError('Amount must be greater than 0.')
+        return amount
 
 
 class CreditCardLoanForm(forms.ModelForm):

@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Transaction Ledger - {{ account.name }}{% endblock %}
+
+{% block page_title %}
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-journal-bookmark"></i> {{ account.name }} — Transaction Ledger</h1>
+            <p class="text-muted mb-0">{{ account.bank_name|default:"-" }} | Account #: {{ account.account_number|default:"-" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'bankloan:account_ledger_entry_create' account.pk %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Entry
+            </a>
+            <a href="{% url 'bankloan:account_transaction_ledger_pdf' account.pk %}" class="btn btn-outline-primary" target="_blank">
+                <i class="bi bi-printer"></i> Print
+            </a>
+            <a href="{% url 'bankloan:account_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card primary">
+            <div class="icon primary">
+                <i class="bi bi-safe"></i>
+            </div>
+            <h3 style="color: var(--primary-color);">৳{{ account.opening_balance|floatformat:0 }}</h3>
+            <p>Opening Balance</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card success">
+            <div class="icon success">
+                <i class="bi bi-arrow-down-circle"></i>
+            </div>
+            <h3 style="color: var(--success-color);">৳{{ total_deposits|floatformat:0 }}</h3>
+            <p>Total Deposits</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card danger">
+            <div class="icon danger">
+                <i class="bi bi-arrow-up-circle"></i>
+            </div>
+            <h3 style="color: var(--danger-color);">৳{{ total_withdrawals|floatformat:0 }}</h3>
+            <p>Total Withdrawals</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card {% if current_balance >= 0 %}success{% else %}danger{% endif %}">
+            <div class="icon {% if current_balance >= 0 %}success{% else %}danger{% endif %}">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <h3 style="color: {% if current_balance >= 0 %}var(--success-color){% else %}var(--danger-color){% endif %};">৳{{ current_balance|floatformat:0 }}</h3>
+            <p>Current Balance</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-journal-text"></i> Transaction History
+            <span class="badge bg-primary ms-2">{{ ledger_rows|length }} Entries</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th class="text-end">Deposit</th>
+                        <th class="text-end">Withdrawal</th>
+                        <th class="text-end">Balance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="table-light">
+                        <td></td>
+                        <td>—</td>
+                        <td><em>Opening Balance</em></td>
+                        <td class="text-end">—</td>
+                        <td class="text-end">—</td>
+                        <td class="text-end fw-bold">৳{{ account.opening_balance|floatformat:0 }}</td>
+                        <td></td>
+                    </tr>
+                    {% for row in ledger_rows %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ row.entry.transaction_date|date:"M d, Y" }}</td>
+                        <td>{{ row.entry.description|default:"-" }}</td>
+                        <td class="text-end">
+                            {% if row.entry.entry_type == 'deposit' %}
+                                <span class="text-success fw-medium">৳{{ row.entry.amount|floatformat:0 }}</span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if row.entry.entry_type == 'withdrawal' %}
+                                <span class="text-danger fw-medium">৳{{ row.entry.amount|floatformat:0 }}</span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-bold">৳{{ row.balance|floatformat:0 }}</td>
+                        <td>
+                            <a href="{% url 'bankloan:account_ledger_entry_delete' row.entry.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                            No transactions yet. <a href="{% url 'bankloan:account_ledger_entry_create' account.pk %}">Add your first entry</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if ledger_rows %}
+                <tfoot>
+                    <tr class="table-dark">
+                        <td colspan="3" class="fw-bold">Total</td>
+                        <td class="text-end fw-bold text-success">৳{{ total_deposits|floatformat:0 }}</td>
+                        <td class="text-end fw-bold text-danger">৳{{ total_withdrawals|floatformat:0 }}</td>
+                        <td class="text-end fw-bold">৳{{ current_balance|floatformat:0 }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

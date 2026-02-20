@@ -256,6 +256,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'account_ledger_list' or request.resolver_match.url_name == 'account_transaction_ledger' or request.resolver_match.url_name == 'account_ledger_entry_create' %}active{% endif %}" href="{% url 'bankloan:account_ledger_list' %}">
+                                <i class="bi bi-journal-bookmark"></i> Account Ledger
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link submenu-link {% if request.resolver_match.app_name == 'bankloan' and request.resolver_match.url_name == 'loan_list' %}active{% endif %}" href="{% url 'bankloan:loan_list' %}">
                                 <i class="bi bi-credit-card"></i> CC Loans
                             </a>
