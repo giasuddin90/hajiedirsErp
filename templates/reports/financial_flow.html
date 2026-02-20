@@ -4,11 +4,12 @@
 {% block page_title %}Financial Inflow & Outflow{% endblock %}
 
 {% block page_actions %}
-<div class="btn-group">
-    <a class="btn btn-outline-primary" href="{% url 'reports:download_financial_flow_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}">
-        <i class="bi bi-download"></i> Download (Print/PDF)
-    </a>
-</div>
+<a class="btn btn-danger d-inline-flex align-items-center gap-2 px-3 py-2 shadow-sm" 
+   href="{% url 'reports:download_financial_flow_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+   title="Download Financial Flow report as PDF for {{ start_date|date:'M d, Y' }} – {{ end_date|date:'M d, Y' }}">
+    <i class="bi bi-file-earmark-pdf fs-5"></i>
+    <span>Download PDF Report</span>
+</a>
 {% endblock %}
 
 {% block content %}
@@ -25,12 +26,17 @@
                         <label class="form-label">End Date</label>
                         <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-lg-4 d-flex flex-wrap gap-2 align-items-center">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-search"></i> Filter
                         </button>
-                        <a href="{% url 'reports:financial_flow' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle"></i>
+                        <a href="{% url 'reports:financial_flow' %}" class="btn btn-outline-secondary" title="Clear filters">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                        <a href="{% url 'reports:download_financial_flow_pdf' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}" 
+                           class="btn btn-outline-danger d-inline-flex align-items-center gap-1" 
+                           title="Download this report as PDF for the selected period">
+                            <i class="bi bi-file-earmark-pdf"></i> Download PDF
                         </a>
                     </div>
                 </form>
