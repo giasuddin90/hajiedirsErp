@@ -12,8 +12,8 @@ def get_company_info():
         dict: Dictionary containing company_name, company_address, and company_phone
     """
     return {
-        'company_name': 'Haji Edris And Sons',
-        'company_address': 'Bandareia, Borisal, Country',
-        'company_phone':   '01824909309',
+        'company_name': 'HAJI IDRIS AND SONS',
+        'company_address': 'RISERV PUKUR UTTOR PAR, CHAIRMAN BARI SHAROK, BHANDARIA, PIROJPUR.',
+        'company_phone': '01704-822220 | 01401-077666 | 01712-450013',
     }
 

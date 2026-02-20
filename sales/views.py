@@ -18,6 +18,9 @@ from stock.models import Product, ProductCategory, ProductBrand, Warehouse
 from django.contrib.auth.models import User
 from core.utils import get_company_info
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def generate_invoice_description(order):
@@ -316,11 +319,7 @@ class SalesOrderCreateView(CreateView):
             error_details = traceback.format_exc()
             error_msg = f"Error creating sales order: {str(e)}"
             messages.error(self.request, error_msg)
-            # Log the full error for debugging
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Sales order creation error: {error_details}")
-            print(f"ERROR: {error_details}")  # Also print for immediate debugging
             return self.form_invalid(form)
     
     def form_invalid(self, form):
@@ -340,11 +339,10 @@ class SalesOrderCreateView(CreateView):
         context = self.get_context_data(form=form)
         context['formset'] = formset
         
-        # Print errors for debugging
-        print(f"DEBUG: Form errors: {form.errors}")
-        print(f"DEBUG: Formset errors: {formset.errors}")
+        logger.debug(f"Form errors: {form.errors}")
+        logger.debug(f"Formset errors: {formset.errors}")
         if formset.non_form_errors():
-            print(f"DEBUG: Formset non-form errors: {formset.non_form_errors()}")
+            logger.debug(f"Formset non-form errors: {formset.non_form_errors()}")
         
         return self.render_to_response(context)
 
@@ -716,9 +714,6 @@ class InstantSalesCreateView(CreateView):
     
     def form_valid(self, form):
         try:
-            print(f"DEBUG: Form is valid, data: {form.cleaned_data}")
-            print(f"DEBUG: POST data: {self.request.POST}")
-            
             with transaction.atomic():
                 # Generate unique order number
                 order_number = f"IS-{uuid.uuid4().hex[:8].upper()}"
@@ -729,16 +724,12 @@ class InstantSalesCreateView(CreateView):
                 
                 # Save the order first
                 self.object = form.save()
-                print(f"DEBUG: Order saved with ID: {self.object.id}")
                 
                 # Handle formset - create with the saved instance
                 formset = SalesOrderItemFormSetCustom(self.request.POST, instance=self.object)
-                print(f"DEBUG: Formset is_valid: {formset.is_valid()}")
-                print(f"DEBUG: Formset errors: {formset.errors}")
                 
                 if formset.is_valid():
                     formset.save()
-                    print(f"DEBUG: Formset saved successfully")
                     
                     # Calculate total amount (subtotal + delivery charges + transportation cost)
                     subtotal = sum(item.total_price for item in self.object.items.all())
@@ -769,7 +760,6 @@ class InstantSalesCreateView(CreateView):
                         total_amount = Decimal('0')
                     self.object.total_amount = total_amount
                     self.object.save()
-                    print(f"DEBUG: Total amount set to: {total_amount}")
                     
                     # Create customer ledger entry with full invoice details
                     if self.object.customer:
@@ -783,29 +773,25 @@ class InstantSalesCreateView(CreateView):
                     # No need to create/store alerts - they're computed in real-time
                     
                     items_count = self.object.items.count()
-                    print(f"DEBUG: Final items count: {items_count}")
                     if items_count > 0:
                         messages.success(self.request, f"Instant sale {order_number} completed successfully with {items_count} products! Total: ৳{total_amount}")
                     else:
                         messages.warning(self.request, f"Instant sale {order_number} created without items. Please add products to complete the sale.")
                 else:
-                    print(f"DEBUG: Formset validation failed: {formset.errors}")
-                    messages.error(self.request, f"Please fix the errors in the product selection. Errors: {formset.errors}")
+                    logger.debug(f"Instant sales formset validation failed: {formset.errors}")
+                    messages.error(self.request, "Please fix the errors in the product selection.")
                     return self.form_invalid(form)
                 
                 # Return redirect response
                 return redirect(self.success_url)
                 
         except Exception as e:
-            print(f"DEBUG: Exception occurred: {str(e)}")
+            logger.error(f"Error creating instant sale: {str(e)}")
             messages.error(self.request, f"Error creating instant sale: {str(e)}")
             return self.form_invalid(form)
     
     def form_invalid(self, form):
-        print(f"DEBUG: Form is invalid, errors: {form.errors}")
-        if hasattr(self, 'object') and self.object:
-            formset = SalesOrderItemFormSetCustom(self.request.POST, instance=self.object)
-            print(f"DEBUG: Formset errors: {formset.errors}")
+        logger.debug(f"Instant sales form invalid: {form.errors}")
         return super().form_invalid(form)
 
 

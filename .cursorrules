@@ -15,6 +15,7 @@ This is a Django ERP (Enterprise Resource Planning) system for **HAJI IDRIS AND 
 - **Frontend**: Bootstrap 5.3.2 with custom styling
 - **Icons**: Bootstrap Icons
 - **Charts**: Chart.js for reporting
+- **PDF Generation**: WeasyPrint (for downloadable PDF files)
 
 ## Core Modules
 - **customers**: Customer management and ledgers
@@ -27,15 +28,44 @@ This is a Django ERP (Enterprise Resource Planning) system for **HAJI IDRIS AND 
 - **reports**: Business reports and analytics
 - **core**: Main Django settings and configuration
 
-## Printing & Invoices
+## Printing & PDF Generation
+- **PDF Library**: WeasyPrint (`weasyprint>=60.0`) — used for downloadable PDF files
+- **Two patterns** are used:
+  1. **Auto-print HTML** (`window.print()`): Template opens in browser and triggers print dialog automatically. Used for invoices, chalans, ledger prints.
+  2. **Downloadable PDF** (WeasyPrint): View generates a PDF file for download. Uses `try/except ImportError` fallback to serve HTML if WeasyPrint is not installed.
+
+### Auto-print HTML Templates (window.print)
 - **Invoice (A4)**: `templates/sales/invoice_pdf.html` — opens in browser, auto-print
 - **Chalan (A4)**: `templates/sales/labour_chalan.html` — delivery chalan, no price info
 - **Customer Ledger PDF**: `templates/customers/ledger_pdf.html` — auto-print
 - **Bank Account Ledger PDF**: `templates/bankloan/bank_account_ledger_pdf.html` — auto-print
-- **Loan Ledger PDF**: `templates/bankloan/loan_ledger_pdf.html`
 - **Bank Account Transaction Ledger PDF**: `templates/bankloan/bank_account_transaction_ledger_pdf.html` — auto-print
-- All print templates use `window.print()` on load (no PDF library required)
-- Company header is hardcoded: HAJI IDRIS AND SONS + phone numbers
+
+### Downloadable PDF Views (WeasyPrint)
+- **Loan Ledger PDF**: `templates/bankloan/loan_ledger_pdf.html` — WeasyPrint PDF download, HTML fallback
+- **Financial Flow PDF**: `templates/reports/financial_flow_pdf.html` — WeasyPrint PDF download, HTML fallback
+- **WeasyPrint pattern** (always use try/except with HTML fallback):
+  ```python
+  try:
+      from weasyprint import HTML
+      from io import BytesIO
+      pdf_file = BytesIO()
+      HTML(string=html).write_pdf(pdf_file)
+      pdf_file.seek(0)
+      response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+      response['Content-Disposition'] = f'attachment; filename="report.pdf"'
+      return response
+  except ImportError:
+      return HttpResponse(html, content_type='text/html')
+  except Exception:
+      return HttpResponse(html, content_type='text/html')
+  ```
+
+### Print Template Rules
+- All print/PDF templates are **standalone** — must NOT extend `base.html`; self-contained HTML with inline styles
+- Auto-print templates include `window.print()` in a `<script>` tag on load
+- Company header: always use "HAJI IDRIS AND SONS" with phone numbers (use `get_company_info()` from `core/utils.py`)
+- Use `@media print` CSS rules for print-specific styling
 
 ## Database Models
 
@@ -144,7 +174,7 @@ This is a Django ERP (Enterprise Resource Planning) system for **HAJI IDRIS AND 
 - **Bootstrap classes**: Use Bootstrap 5 utility classes for layout. Custom CSS goes in `static/css/`
 - **Icons**: Use Bootstrap Icons (`bi-*` classes)
 - **No build step**: Static files are served directly. No webpack, no npm, no bundler
-- **Print templates**: Standalone HTML with inline CSS, `@media print` rules, and `window.print()` auto-trigger
+- **Print templates**: Standalone HTML with inline CSS, `@media print` rules. Auto-print templates use `window.print()`, downloadable PDFs use WeasyPrint
 
 ### Views
 - Use class-based views for CRUD operations
@@ -166,9 +196,11 @@ This is a Django ERP (Enterprise Resource Planning) system for **HAJI IDRIS AND 
 3. **Use `prefetch_related`/`select_related`** — Optimize queries when accessing related objects
 4. **CSRF protection** — All POST forms must include `{% csrf_token %}`
 5. **Print templates are standalone** — Print/PDF templates must NOT extend `base.html`; they are self-contained HTML with inline styles
-6. **Company info in print headers** — Always use hardcoded "HAJI IDRIS AND SONS" with phone numbers in print templates
+6. **Company info in print headers** — Use `get_company_info()` from `core/utils.py` in view context; display "HAJI IDRIS AND SONS" with phone numbers
 7. **POS templates** — POS (80mm) templates use `@page { size: 80mm auto; }` and compact styling
 8. **Real-time inventory only** — Never create models that store pre-calculated stock values
+9. **PDF downloads use WeasyPrint** — Always wrap WeasyPrint calls in `try/except ImportError` with HTML fallback
+10. **No debug print() statements** — Use `logging.getLogger(__name__)` for all debug/error logging
 
 ## File Structure
 ```
@@ -228,6 +260,7 @@ python manage.py createsuperuser
 - ✅ Bank account transaction ledger print (auto-print HTML)
 - ✅ Real-time inventory calculation (no pre-calculated values)
 - ✅ Dynamic low stock alerts based on min_stock_level
+- ✅ Downloadable PDF reports via WeasyPrint (with HTML fallback)
 
 ## Security Notes
 - Never hardcode secrets — use environment variables for production

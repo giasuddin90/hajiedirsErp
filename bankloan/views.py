@@ -19,6 +19,9 @@ class BankAccountListView(ListView):
     template_name = 'bankloan/bank_account_list.html'
     context_object_name = 'accounts'
 
+    def get_queryset(self):
+        return BankAccount.objects.filter(is_active=True)
+
 
 class BankAccountLedgerListView(ListView):
     model = BankAccount
@@ -130,6 +133,8 @@ def bank_account_ledger_pdf(request, pk):
     template = get_template('bankloan/bank_account_ledger_pdf.html')
     html = template.render(context)
     return HttpResponse(html, content_type='text/html')
+
+
 class BankAccountCreateView(CreateView):
     model = BankAccount
     form_class = BankAccountForm
@@ -403,6 +408,7 @@ def credit_card_loan_ledger_pdf(request, pk):
     loan = get_object_or_404(CreditCardLoan, pk=pk)
     ledger_entries = loan.ledger_entries.order_by('-transaction_date', '-id')
 
+    company_info = get_company_info()
     context = {
         'loan': loan,
         'ledger_entries': ledger_entries,
@@ -410,10 +416,12 @@ def credit_card_loan_ledger_pdf(request, pk):
         'total_paid': loan.get_total_paid(),
         'extra_paid': loan.get_total_interest_paid(),
         'outstanding_principal': loan.get_outstanding_principal(),
+        **company_info,
     }
 
     template = get_template('bankloan/loan_ledger_pdf.html')
     html = template.render(context)
+
     try:
         from weasyprint import HTML
         from io import BytesIO
@@ -426,10 +434,6 @@ def credit_card_loan_ledger_pdf(request, pk):
         response['Content-Disposition'] = f'attachment; filename="cc_loan_ledger_{loan.deal_number}.pdf"'
         return response
     except ImportError:
-        response = HttpResponse(html, content_type='text/html')
-        response['Content-Disposition'] = f'attachment; filename="cc_loan_ledger_{loan.deal_number}.html"'
-        return response
+        return HttpResponse(html, content_type='text/html')
     except Exception:
-        response = HttpResponse(html, content_type='text/html')
-        response['Content-Disposition'] = f'attachment; filename="cc_loan_ledger_{loan.deal_number}.html"'
-        return response
+        return HttpResponse(html, content_type='text/html')

@@ -39,6 +39,7 @@ class Supplier(models.Model):
     class Meta:
         verbose_name = "Supplier"
         verbose_name_plural = "Suppliers"
+        ordering = ['name']
 
 
 class SupplierLedger(models.Model):
@@ -74,5 +75,6 @@ class SupplierLedger(models.Model):
     class Meta:
         verbose_name = "Supplier Ledger"
         verbose_name_plural = "Supplier Ledgers"
+        ordering = ['-transaction_date', '-id']
 
 

@@ -64,6 +64,7 @@ class PurchaseOrder(models.Model):
     class Meta:
         verbose_name = "Purchase Order"
         verbose_name_plural = "Purchase Orders"
+        ordering = ['-order_date', '-created_at']
 
 
 class PurchaseOrderItem(models.Model):
@@ -96,6 +97,7 @@ class PurchaseOrderItem(models.Model):
     class Meta:
         verbose_name = "Purchase Order Item"
         verbose_name_plural = "Purchase Order Items"
+        ordering = ['id']
 
 
 class GoodsReceipt(models.Model):
@@ -189,5 +191,6 @@ class GoodsReceiptItem(models.Model):
     class Meta:
         verbose_name = "Goods Receipt Item"
         verbose_name_plural = "Goods Receipt Items"
+        ordering = ['id']
 
 

@@ -23,7 +23,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # Basic counts
         context['total_customers'] = Customer.objects.filter(is_active=True).count()
         context['total_suppliers'] = Supplier.objects.filter(is_active=True).count()
-        context['total_products'] = Product.objects.count()
+        context['total_products'] = Product.objects.filter(is_active=True).count()
         
         # Financial metrics
         today = timezone.now().date()
@@ -200,9 +200,9 @@ def dashboard_redirect(request):
         max((loan.total_paid or 0) - (loan.total_disbursed or 0), 0) for loan in closed_loans
     )
     return render(request, 'dashboard.html', {
-        'total_customers': Customer.objects.count(),
-        'total_suppliers': Supplier.objects.count(),
-        'total_products': Product.objects.count(),
+        'total_customers': Customer.objects.filter(is_active=True).count(),
+        'total_suppliers': Supplier.objects.filter(is_active=True).count(),
+        'total_products': Product.objects.filter(is_active=True).count(),
         'total_sales': SalesOrder.objects.filter(status='delivered').aggregate(total=Sum('total_amount'))['total'] or 0,
         'recent_orders': SalesOrder.objects.select_related('customer').order_by('-created_at')[:5],
         'low_stock_alerts': get_low_stock_products()[:5],

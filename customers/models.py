@@ -107,3 +107,4 @@ class CustomerCommitment(models.Model):
     class Meta:
         verbose_name = "Customer Commitment"
         verbose_name_plural = "Customer Commitments"
+        ordering = ['-commitment_date', '-id']

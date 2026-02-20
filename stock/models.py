@@ -29,6 +29,7 @@ class Warehouse(models.Model):
     class Meta:
         verbose_name = "Warehouse"
         verbose_name_plural = "Warehouses"
+        ordering = ['name']
 
 
 class ProductCategory(models.Model):
