@@ -626,6 +626,22 @@ class FinancialFlowReportView(LoginRequiredMixin, ListView):
 
         total_inflow += total_cc_disbursement
 
+        # Bank account ledger: deposit (cash to bank) and withdrawal (bank to cash) in period
+        total_bank_deposit = (
+            BankAccountLedger.objects.filter(
+                entry_type='deposit',
+                transaction_date__range=[start_date, end_date]
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        )
+        total_bank_withdraw = (
+            BankAccountLedger.objects.filter(
+                entry_type='withdrawal',
+                transaction_date__range=[start_date, end_date]
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        )
+        # Total Cash Inflow: bank withdraw increases cash, bank deposit decreases cash
+        total_cash_inflow = total_inflow + total_bank_withdraw - total_bank_deposit
+
         # Outflow: Cash/Bank paid to suppliers (SupplierLedger with transaction_type='payment')
         supplier_payments_qs = SupplierLedger.objects.filter(
             transaction_type='payment',
@@ -669,7 +685,7 @@ class FinancialFlowReportView(LoginRequiredMixin, ListView):
             count=Count('id')
         ).order_by('-total')
 
-        net_flow = total_inflow - (total_outflow_suppliers + total_cc_payments + total_expenses)
+        net_flow = total_cash_inflow - (total_outflow_suppliers + total_cc_payments + total_expenses)
 
         context.update({
             'start_date': start_date,
@@ -680,6 +696,9 @@ class FinancialFlowReportView(LoginRequiredMixin, ListView):
             'outflow_by_cc_loan': outflow_by_cc_loan,
             'expenses_by_title': expenses_by_title,
             'total_inflow': total_inflow,
+            'total_cash_inflow': total_cash_inflow,
+            'total_bank_deposit': total_bank_deposit,
+            'total_bank_withdraw': total_bank_withdraw,
             'total_outflow_suppliers': total_outflow_suppliers,
             'total_cc_disbursement': total_cc_disbursement,
             'total_cc_payments': total_cc_payments,
@@ -758,6 +777,21 @@ def download_financial_flow_pdf(request):
 
     total_inflow += total_cc_disbursement
 
+    # Bank account ledger: deposit (cash to bank) and withdrawal (bank to cash) in period
+    total_bank_deposit = (
+        BankAccountLedger.objects.filter(
+            entry_type='deposit',
+            transaction_date__range=[start_date, end_date]
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    )
+    total_bank_withdraw = (
+        BankAccountLedger.objects.filter(
+            entry_type='withdrawal',
+            transaction_date__range=[start_date, end_date]
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    )
+    total_cash_inflow = total_inflow + total_bank_withdraw - total_bank_deposit
+
     # Outflow: Cash/Bank paid to suppliers
     supplier_payments_qs = SupplierLedger.objects.filter(
         transaction_type='payment',
@@ -799,7 +833,7 @@ def download_financial_flow_pdf(request):
         count=Count('id')
     ).order_by('-total')
 
-    net_flow = total_inflow - (total_outflow_suppliers + total_cc_payments + total_expenses)
+    net_flow = total_cash_inflow - (total_outflow_suppliers + total_cc_payments + total_expenses)
 
     template = get_template('reports/financial_flow_pdf.html')
     context = {
@@ -811,6 +845,9 @@ def download_financial_flow_pdf(request):
         'outflow_by_cc_loan': outflow_by_cc_loan,
         'expenses_by_title': expenses_by_title,
         'total_inflow': total_inflow,
+        'total_cash_inflow': total_cash_inflow,
+        'total_bank_deposit': total_bank_deposit,
+        'total_bank_withdraw': total_bank_withdraw,
         'total_outflow_suppliers': total_outflow_suppliers,
         'total_cc_disbursement': total_cc_disbursement,
         'total_cc_payments': total_cc_payments,

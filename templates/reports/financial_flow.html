@@ -44,10 +44,32 @@
         <div class="card-module success">
             <div class="card-module-header">
                 <div>
-                    <h6 class="card-module-title">Total Inflow</h6>
-                    <h3 class="card-module-value">৳{{ total_inflow|floatformat:2 }}</h3>
+                    <h6 class="card-module-title">Total Cash Inflow</h6>
+                    <h3 class="card-module-value">৳{{ total_cash_inflow|floatformat:2 }}</h3>
                 </div>
                 <div class="card-module-icon"><i class="bi bi-arrow-down-circle"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-module info">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Total Bank Deposit</h6>
+                    <h3 class="card-module-value">৳{{ total_bank_deposit|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon"><i class="bi bi-bank"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-module primary">
+            <div class="card-module-header">
+                <div>
+                    <h6 class="card-module-title">Total Bank Withdraw</h6>
+                    <h3 class="card-module-value">৳{{ total_bank_withdraw|floatformat:2 }}</h3>
+                </div>
+                <div class="card-module-icon"><i class="bi bi-cash-stack"></i></div>
             </div>
         </div>
     </div>
@@ -62,6 +84,9 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="row mb-3">
     <div class="col-md-3">
         <div class="card-module warning">
             <div class="card-module-header">
@@ -86,9 +111,6 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="row mb-3">
     <div class="col-md-3">
         <div class="card-module success">
             <div class="card-module-header">
