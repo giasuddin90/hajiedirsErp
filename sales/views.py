@@ -195,6 +195,30 @@ class SalesOrderListView(StaffRequiredMixin, ListView):
     template_name = 'sales/order_list.html'
     context_object_name = 'orders'
 
+    def get_queryset(self):
+        queryset = SalesOrder.objects.select_related('customer').all()
+
+        invoice_id = self.request.GET.get('invoice_id', '').strip()
+        customer_name = self.request.GET.get('customer_name', '').strip()
+
+        if invoice_id:
+            queryset = queryset.filter(order_number__icontains=invoice_id)
+
+        if customer_name:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(customer__name__icontains=customer_name) |
+                Q(customer_name__icontains=customer_name)
+            )
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['invoice_id'] = self.request.GET.get('invoice_id', '')
+        context['customer_name'] = self.request.GET.get('customer_name', '')
+        return context
+
 
 class SalesOrderDetailView(StaffRequiredMixin, DetailView):
     model = SalesOrder

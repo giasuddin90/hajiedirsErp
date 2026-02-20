@@ -13,11 +13,42 @@
 {% block content %}
 <div class="row">
     <div class="col-12">
+        <!-- Filter Section -->
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <form method="get" class="row g-2 align-items-end">
+                    <div class="col-md-4 col-sm-6">
+                        <label for="invoice_id" class="form-label mb-0 small">Invoice / Order #</label>
+                        <input type="text" class="form-control form-control-sm" id="invoice_id" name="invoice_id"
+                               value="{{ invoice_id }}" placeholder="e.g. SO-A1B2C3D4">
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <label for="customer_name" class="form-label mb-0 small">Customer Name</label>
+                        <input type="text" class="form-control form-control-sm" id="customer_name" name="customer_name"
+                               value="{{ customer_name }}" placeholder="Search by customer name">
+                    </div>
+                    <div class="col-md-4 col-sm-12">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        {% if invoice_id or customer_name %}
+                        <a href="{% url 'sales:order_list' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">
                     <i class="bi bi-cart-check"></i>
                     Sales Orders
+                    {% if invoice_id or customer_name %}
+                    <small class="text-muted fs-6">({{ orders|length }} result{{ orders|length|pluralize }})</small>
+                    {% endif %}
                 </h5>
             </div>
             <div class="card-body">
