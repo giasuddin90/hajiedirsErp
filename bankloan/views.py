@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Case, When, DecimalField, Value
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
@@ -12,9 +13,10 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from .forms import BankAccountForm, BankAccountLedgerForm, CreditCardLoanForm, CreditCardLoanLedgerForm
 from .models import BankAccount, BankAccountLedger, CreditCardLoan, CreditCardLoanLedger
 from core.utils import get_company_info
+from core.mixins import StaffRequiredMixin, AdminRequiredMixin
 
 
-class BankAccountListView(ListView):
+class BankAccountListView(StaffRequiredMixin, ListView):
     model = BankAccount
     template_name = 'bankloan/bank_account_list.html'
     context_object_name = 'accounts'
@@ -23,7 +25,7 @@ class BankAccountListView(ListView):
         return BankAccount.objects.filter(is_active=True)
 
 
-class BankAccountLedgerListView(ListView):
+class BankAccountLedgerListView(StaffRequiredMixin, ListView):
     model = BankAccount
     template_name = 'bankloan/bank_account_ledger_list.html'
     context_object_name = 'accounts'
@@ -77,7 +79,7 @@ class BankAccountLedgerListView(ListView):
         return context
 
 
-class BankAccountLedgerView(DetailView):
+class BankAccountLedgerView(StaffRequiredMixin, DetailView):
     model = BankAccount
     template_name = 'bankloan/bank_account_ledger.html'
     context_object_name = 'account'
@@ -107,6 +109,7 @@ class BankAccountLedgerView(DetailView):
         return context
 
 
+@login_required
 def bank_account_ledger_pdf(request, pk):
     account = get_object_or_404(BankAccount, pk=pk)
     loans = account.credit_card_loans.all().order_by('-start_date', '-created_at')
@@ -135,27 +138,27 @@ def bank_account_ledger_pdf(request, pk):
     return HttpResponse(html, content_type='text/html')
 
 
-class BankAccountCreateView(CreateView):
+class BankAccountCreateView(StaffRequiredMixin, CreateView):
     model = BankAccount
     form_class = BankAccountForm
     template_name = 'bankloan/bank_account_form.html'
     success_url = reverse_lazy('bankloan:account_list')
 
 
-class BankAccountUpdateView(UpdateView):
+class BankAccountUpdateView(StaffRequiredMixin, UpdateView):
     model = BankAccount
     form_class = BankAccountForm
     template_name = 'bankloan/bank_account_form.html'
     success_url = reverse_lazy('bankloan:account_list')
 
 
-class BankAccountDeleteView(DeleteView):
+class BankAccountDeleteView(AdminRequiredMixin, DeleteView):
     model = BankAccount
     template_name = 'bankloan/bank_account_confirm_delete.html'
     success_url = reverse_lazy('bankloan:account_list')
 
 
-class BankAccountTransactionLedgerView(DetailView):
+class BankAccountTransactionLedgerView(StaffRequiredMixin, DetailView):
     model = BankAccount
     template_name = 'bankloan/bank_account_transaction_ledger.html'
     context_object_name = 'account'
@@ -186,7 +189,7 @@ class BankAccountTransactionLedgerView(DetailView):
         return context
 
 
-class BankAccountLedgerEntryCreateView(CreateView):
+class BankAccountLedgerEntryCreateView(StaffRequiredMixin, CreateView):
     model = BankAccountLedger
     form_class = BankAccountLedgerForm
     template_name = 'bankloan/bank_account_ledger_entry_form.html'
@@ -208,7 +211,7 @@ class BankAccountLedgerEntryCreateView(CreateView):
         return response
 
 
-class BankAccountLedgerEntryDeleteView(DeleteView):
+class BankAccountLedgerEntryDeleteView(AdminRequiredMixin, DeleteView):
     model = BankAccountLedger
     template_name = 'bankloan/bank_account_ledger_entry_confirm_delete.html'
     context_object_name = 'entry'
@@ -222,6 +225,7 @@ class BankAccountLedgerEntryDeleteView(DeleteView):
         return response
 
 
+@login_required
 def bank_account_transaction_ledger_pdf(request, pk):
     account = get_object_or_404(BankAccount, pk=pk)
     entries = account.ledger_entries.all().order_by('transaction_date', 'id')
@@ -251,7 +255,7 @@ def bank_account_transaction_ledger_pdf(request, pk):
     return HttpResponse(html, content_type='text/html')
 
 
-class CreditCardLoanListView(ListView):
+class CreditCardLoanListView(StaffRequiredMixin, ListView):
     model = CreditCardLoan
     template_name = 'bankloan/loan_list.html'
     context_object_name = 'loans'
@@ -315,7 +319,7 @@ class CreditCardLoanListView(ListView):
         return context
 
 
-class CreditCardLoanDetailView(DetailView):
+class CreditCardLoanDetailView(StaffRequiredMixin, DetailView):
     model = CreditCardLoan
     template_name = 'bankloan/loan_detail.html'
     context_object_name = 'loan'
@@ -340,7 +344,7 @@ class CreditCardLoanDetailView(DetailView):
         return context
 
 
-class CreditCardLoanCreateView(CreateView):
+class CreditCardLoanCreateView(StaffRequiredMixin, CreateView):
     model = CreditCardLoan
     form_class = CreditCardLoanForm
     template_name = 'bankloan/loan_form.html'
@@ -365,7 +369,7 @@ class CreditCardLoanCreateView(CreateView):
         return response
 
 
-class CreditCardLoanUpdateView(UpdateView):
+class CreditCardLoanUpdateView(StaffRequiredMixin, UpdateView):
     model = CreditCardLoan
     form_class = CreditCardLoanForm
     template_name = 'bankloan/loan_form.html'
@@ -374,13 +378,13 @@ class CreditCardLoanUpdateView(UpdateView):
         return reverse_lazy('bankloan:loan_detail', kwargs={'pk': self.object.pk})
 
 
-class CreditCardLoanDeleteView(DeleteView):
+class CreditCardLoanDeleteView(AdminRequiredMixin, DeleteView):
     model = CreditCardLoan
     template_name = 'bankloan/loan_confirm_delete.html'
     success_url = reverse_lazy('bankloan:loan_list')
 
 
-class CreditCardLoanLedgerCreateView(CreateView):
+class CreditCardLoanLedgerCreateView(StaffRequiredMixin, CreateView):
     model = CreditCardLoanLedger
     form_class = CreditCardLoanLedgerForm
     template_name = 'bankloan/loan_ledger_form.html'
@@ -404,6 +408,7 @@ class CreditCardLoanLedgerCreateView(CreateView):
         return response
 
 
+@login_required
 def credit_card_loan_ledger_pdf(request, pk):
     loan = get_object_or_404(CreditCardLoan, pk=pk)
     ledger_entries = loan.ledger_entries.order_by('-transaction_date', '-id')

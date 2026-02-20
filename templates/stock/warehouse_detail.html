@@ -19,9 +19,11 @@
                     <a href="{% url 'stock:warehouse_edit' object.pk %}" class="btn btn-warning">
                         <i class="bi bi-pencil"></i> Edit
                     </a>
+                    {% if user.is_superuser %}
                     <a href="{% url 'stock:warehouse_delete' object.pk %}" class="btn btn-danger">
                         <i class="bi bi-trash"></i> Delete
                     </a>
+                    {% endif %}
                     <a href="{% url 'stock:warehouse_list' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> Back to Warehouses
                     </a>
@@ -74,9 +76,11 @@
                                 <a href="{% url 'stock:warehouse_edit' object.pk %}" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Edit Warehouse
                                 </a>
+                                {% if user.is_superuser %}
                                 <a href="{% url 'stock:warehouse_delete' object.pk %}" class="btn btn-danger">
                                     <i class="bi bi-trash"></i> Delete Warehouse
                                 </a>
+                                {% endif %}
                                 <a href="{% url 'stock:warehouse_list' %}" class="btn btn-outline-secondary">
                                     <i class="bi bi-arrow-left"></i> Back to List
                                 </a>

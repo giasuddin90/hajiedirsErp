@@ -123,9 +123,11 @@
                                 <a href="{% url 'bankloan:loan_edit' loan.pk %}" class="btn btn-sm btn-outline-secondary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                {% if user.is_superuser %}
                                 <a href="{% url 'bankloan:loan_delete' loan.pk %}" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

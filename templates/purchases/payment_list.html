@@ -91,9 +91,11 @@
                                         <a href="{% url 'purchases:payment_edit' payment.pk %}" class="btn btn-outline-primary btn-sm" title="Edit Payment">
                                             <i class="bi bi-pencil"></i>
                                         </a>
+                                        {% if user.is_superuser %}
                                         <a href="{% url 'purchases:payment_delete' payment.pk %}" class="btn btn-outline-danger btn-sm" title="Delete Payment">
                                             <i class="bi bi-trash"></i>
                                         </a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>

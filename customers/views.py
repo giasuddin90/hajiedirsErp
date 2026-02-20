@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
 from decimal import Decimal
 from django.http import HttpResponse
@@ -10,9 +11,10 @@ from .models import Customer, CustomerLedger, CustomerCommitment
 from .forms import CustomerForm, CustomerLedgerForm, CustomerCommitmentForm, SetOpeningBalanceForm
 from sales.models import SalesOrder
 from core.utils import get_company_info
+from core.mixins import StaffRequiredMixin, AdminRequiredMixin
 
 
-class CustomerListView(ListView):
+class CustomerListView(StaffRequiredMixin, ListView):
     model = Customer
     template_name = 'customers/customer_list.html'
     context_object_name = 'customers'
@@ -54,32 +56,32 @@ class CustomerListView(ListView):
         return context
 
 
-class CustomerDetailView(DetailView):
+class CustomerDetailView(StaffRequiredMixin, DetailView):
     model = Customer
     template_name = 'customers/customer_detail.html'
 
 
-class CustomerCreateView(CreateView):
+class CustomerCreateView(StaffRequiredMixin, CreateView):
     model = Customer
     form_class = CustomerForm
     template_name = 'customers/customer_form.html'
     success_url = reverse_lazy('customers:customer_list')
 
 
-class CustomerUpdateView(UpdateView):
+class CustomerUpdateView(StaffRequiredMixin, UpdateView):
     model = Customer
     form_class = CustomerForm
     template_name = 'customers/customer_form.html'
     success_url = reverse_lazy('customers:customer_list')
 
 
-class CustomerDeleteView(DeleteView):
+class CustomerDeleteView(AdminRequiredMixin, DeleteView):
     model = Customer
     template_name = 'customers/customer_confirm_delete.html'
     success_url = reverse_lazy('customers:customer_list')
 
 
-class CustomerLedgerListView(ListView):
+class CustomerLedgerListView(StaffRequiredMixin, ListView):
     model = CustomerLedger
     template_name = 'customers/ledger_list.html'
     context_object_name = 'items'
@@ -90,7 +92,7 @@ class CustomerLedgerListView(ListView):
         return CustomerLedger.objects.select_related('customer', 'created_by').order_by('-transaction_date', '-id')
 
 
-class CustomerLedgerDetailView(DetailView):
+class CustomerLedgerDetailView(StaffRequiredMixin, DetailView):
     model = Customer
     template_name = 'customers/customer_ledger_detail.html'
     
@@ -165,7 +167,7 @@ class CustomerLedgerDetailView(DetailView):
         return context
 
 
-class CustomerLedgerCreateView(CreateView):
+class CustomerLedgerCreateView(StaffRequiredMixin, CreateView):
     model = CustomerLedger
     form_class = CustomerLedgerForm
     template_name = 'customers/ledger_form.html'
@@ -224,13 +226,13 @@ class CustomerLedgerCreateView(CreateView):
 
 
 
-class CustomerCommitmentListView(ListView):
+class CustomerCommitmentListView(StaffRequiredMixin, ListView):
     model = CustomerCommitment
     template_name = 'customers/commitment_list.html'
     context_object_name = 'items'
 
 
-class CustomerCommitmentCreateView(CreateView):
+class CustomerCommitmentCreateView(StaffRequiredMixin, CreateView):
     model = CustomerCommitment
     form_class = CustomerCommitmentForm
     template_name = 'customers/commitment_form.html'
@@ -242,7 +244,7 @@ class CustomerCommitmentCreateView(CreateView):
         return context
 
 
-class CustomerCommitmentUpdateView(UpdateView):
+class CustomerCommitmentUpdateView(StaffRequiredMixin, UpdateView):
     model = CustomerCommitment
     form_class = CustomerCommitmentForm
     template_name = 'customers/commitment_form.html'
@@ -254,12 +256,13 @@ class CustomerCommitmentUpdateView(UpdateView):
         return context
 
 
-class CustomerCommitmentDeleteView(DeleteView):
+class CustomerCommitmentDeleteView(AdminRequiredMixin, DeleteView):
     model = CustomerCommitment
     template_name = 'customers/commitment_confirm_delete.html'
     success_url = reverse_lazy('customers:commitment_list')
 
 
+@login_required
 def set_opening_balance(request, pk):
     """Set opening balance for a customer"""
     customer = get_object_or_404(Customer, pk=pk)
@@ -280,6 +283,7 @@ def set_opening_balance(request, pk):
     })
 
 
+@login_required
 def customer_ledger_pdf(request, pk):
     """Generate PDF report for customer ledger"""
     try:

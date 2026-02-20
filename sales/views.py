@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -17,6 +18,7 @@ from customers.models import Customer, CustomerLedger
 from stock.models import Product, ProductCategory, ProductBrand, Warehouse
 from django.contrib.auth.models import User
 from core.utils import get_company_info
+from core.mixins import StaffRequiredMixin, AdminRequiredMixin
 import uuid
 import logging
 
@@ -188,18 +190,18 @@ def create_or_update_deposit_ledger_entry(order, deposit_amount, user=None, upda
         return ledger_entry
 
 
-class SalesOrderListView(ListView):
+class SalesOrderListView(StaffRequiredMixin, ListView):
     model = SalesOrder
     template_name = 'sales/order_list.html'
     context_object_name = 'orders'
 
 
-class SalesOrderDetailView(DetailView):
+class SalesOrderDetailView(StaffRequiredMixin, DetailView):
     model = SalesOrder
     template_name = 'sales/order_detail.html'
 
 
-class SalesOrderCreateView(CreateView):
+class SalesOrderCreateView(StaffRequiredMixin, CreateView):
     model = SalesOrder
     form_class = SalesOrderForm
     template_name = 'sales/order_form.html'
@@ -347,7 +349,7 @@ class SalesOrderCreateView(CreateView):
         return self.render_to_response(context)
 
 
-class SalesOrderUpdateView(UpdateView):
+class SalesOrderUpdateView(StaffRequiredMixin, UpdateView):
     model = SalesOrder
     form_class = SalesOrderForm
     template_name = 'sales/order_form.html'
@@ -444,7 +446,7 @@ class SalesOrderUpdateView(UpdateView):
             return self.form_invalid(form)
 
 
-class SalesOrderDeleteView(DeleteView):
+class SalesOrderDeleteView(AdminRequiredMixin, DeleteView):
     model = SalesOrder
     template_name = 'sales/order_confirm_delete.html'
     success_url = reverse_lazy('sales:order_list')
@@ -452,7 +454,7 @@ class SalesOrderDeleteView(DeleteView):
 
 
 
-class SalesDailyReportView(ListView):
+class SalesDailyReportView(StaffRequiredMixin, ListView):
     model = SalesOrder
     template_name = 'sales/sales_daily_report.html'
     context_object_name = 'reports'
@@ -463,7 +465,7 @@ class SalesDailyReportView(ListView):
         return SalesOrder.objects.filter(order_date=today)
 
 
-class SalesMonthlyReportView(ListView):
+class SalesMonthlyReportView(StaffRequiredMixin, ListView):
     model = SalesOrder
     template_name = 'sales/sales_monthly_report.html'
     context_object_name = 'reports'
@@ -477,7 +479,7 @@ class SalesMonthlyReportView(ListView):
         )
 
 
-class SalesCustomerReportView(ListView):
+class SalesCustomerReportView(StaffRequiredMixin, ListView):
     model = SalesOrder
     template_name = 'sales/sales_customer_report.html'
     context_object_name = 'reports'
@@ -485,6 +487,7 @@ class SalesCustomerReportView(ListView):
 
 
 
+@login_required
 def mark_order_delivered(request, order_id):
     """Mark sales order as delivered"""
     try:
@@ -504,6 +507,7 @@ def mark_order_delivered(request, order_id):
     return redirect('sales:order_detail', order_id)
 
 
+@login_required
 def cancel_sales_order(request, order_id):
     """Cancel sales order"""
     try:
@@ -523,6 +527,7 @@ def cancel_sales_order(request, order_id):
     return redirect('sales:order_detail', order_id)
 
 
+@login_required
 def sales_order_invoice(request, order_id):
     """Generate PDF invoice for sales order"""
     try:
@@ -622,6 +627,7 @@ def sales_order_invoice(request, order_id):
         return redirect('sales:order_detail', order_id)
 
 
+@login_required
 def labour_chalan(request, order_id):
     """Generate labour chalan PDF for sales order (no cost calculations)"""
     try:
@@ -688,7 +694,7 @@ def labour_chalan(request, order_id):
         return redirect('sales:order_detail', order_id)
 
 
-class InstantSalesCreateView(CreateView):
+class InstantSalesCreateView(StaffRequiredMixin, CreateView):
     """View for creating instant sales"""
     model = SalesOrder
     form_class = InstantSalesForm
@@ -795,7 +801,7 @@ class InstantSalesCreateView(CreateView):
         return super().form_invalid(form)
 
 
-class InstantSalesUpdateView(UpdateView):
+class InstantSalesUpdateView(StaffRequiredMixin, UpdateView):
     """View for editing instant sales"""
     model = SalesOrder
     form_class = InstantSalesForm

@@ -104,11 +104,13 @@
                                                        title="Edit Warehouse">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
+                                                    {% if user.is_superuser %}
                                                     <a href="{% url 'stock:warehouse_delete' warehouse.pk %}" 
                                                        class="btn btn-outline-danger btn-sm" 
                                                        title="Delete Warehouse">
                                                         <i class="bi bi-trash"></i>
                                                     </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>

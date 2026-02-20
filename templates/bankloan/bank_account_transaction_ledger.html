@@ -114,9 +114,11 @@
                         </td>
                         <td class="text-end fw-bold">৳{{ row.balance|floatformat:0 }}</td>
                         <td>
+                            {% if user.is_superuser %}
                             <a href="{% url 'bankloan:account_ledger_entry_delete' row.entry.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}

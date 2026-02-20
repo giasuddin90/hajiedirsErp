@@ -174,9 +174,11 @@
                                         <a href="{% url 'purchases:order_create' %}" class="btn btn-outline-secondary btn-sm" title="New Purchase">
                                             <i class="bi bi-cart-plus"></i>
                                         </a>
+                                        {% if user.is_superuser %}
                                         <a href="{% url 'suppliers:supplier_delete' supplier.pk %}" class="btn btn-outline-danger btn-sm" title="Delete Supplier">
                                             <i class="bi bi-trash"></i>
                                         </a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>

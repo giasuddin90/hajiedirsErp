@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy, reverse
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Sum, Count, Q
@@ -12,9 +12,10 @@ import csv
 
 from .models import ExpenseCategory, Expense
 from .forms import ExpenseCategoryForm, ExpenseForm, ExpenseFilterForm
+from core.mixins import StaffRequiredMixin, AdminRequiredMixin
 
 
-class ExpenseDashboardView(LoginRequiredMixin, TemplateView):
+class ExpenseDashboardView(StaffRequiredMixin, TemplateView):
     """Simple expense dashboard with overview statistics"""
     template_name = 'expenses/dashboard.html'
     
@@ -82,7 +83,7 @@ class ExpenseDashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class ExpenseCategoryListView(LoginRequiredMixin, ListView):
+class ExpenseCategoryListView(StaffRequiredMixin, ListView):
     """List all expense categories"""
     model = ExpenseCategory
     template_name = 'expenses/category_list.html'
@@ -90,7 +91,7 @@ class ExpenseCategoryListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
 
-class ExpenseCategoryCreateView(LoginRequiredMixin, CreateView):
+class ExpenseCategoryCreateView(StaffRequiredMixin, CreateView):
     """Create new expense category"""
     model = ExpenseCategory
     form_class = ExpenseCategoryForm
@@ -102,7 +103,7 @@ class ExpenseCategoryCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class ExpenseCategoryUpdateView(LoginRequiredMixin, UpdateView):
+class ExpenseCategoryUpdateView(StaffRequiredMixin, UpdateView):
     """Update expense category"""
     model = ExpenseCategory
     form_class = ExpenseCategoryForm
@@ -114,7 +115,7 @@ class ExpenseCategoryUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class ExpenseCategoryDeleteView(LoginRequiredMixin, DeleteView):
+class ExpenseCategoryDeleteView(AdminRequiredMixin, DeleteView):
     """Delete expense category"""
     model = ExpenseCategory
     template_name = 'expenses/category_confirm_delete.html'
@@ -125,7 +126,7 @@ class ExpenseCategoryDeleteView(LoginRequiredMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-class ExpenseListView(LoginRequiredMixin, ListView):
+class ExpenseListView(StaffRequiredMixin, ListView):
     """List all expenses with filtering"""
     model = Expense
     template_name = 'expenses/expense_list.html'
@@ -202,14 +203,14 @@ class ExpenseListView(LoginRequiredMixin, ListView):
         return context
 
 
-class ExpenseDetailView(LoginRequiredMixin, DetailView):
+class ExpenseDetailView(StaffRequiredMixin, DetailView):
     """View expense details"""
     model = Expense
     template_name = 'expenses/expense_detail.html'
     context_object_name = 'expense'
 
 
-class ExpenseCreateView(LoginRequiredMixin, CreateView):
+class ExpenseCreateView(StaffRequiredMixin, CreateView):
     """Create new expense"""
     model = Expense
     form_class = ExpenseForm
@@ -222,7 +223,7 @@ class ExpenseCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class ExpenseUpdateView(LoginRequiredMixin, UpdateView):
+class ExpenseUpdateView(StaffRequiredMixin, UpdateView):
     """Update expense"""
     model = Expense
     form_class = ExpenseForm
@@ -234,7 +235,7 @@ class ExpenseUpdateView(LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 
-class ExpenseDeleteView(LoginRequiredMixin, DeleteView):
+class ExpenseDeleteView(AdminRequiredMixin, DeleteView):
     """Delete expense"""
     model = Expense
     template_name = 'expenses/expense_confirm_delete.html'
@@ -246,6 +247,7 @@ class ExpenseDeleteView(LoginRequiredMixin, DeleteView):
 
 
 # CSV Download Views
+@login_required
 def download_expenses_csv(request):
     """Download expenses as CSV"""
     expenses = Expense.objects.all().order_by('-expense_date')

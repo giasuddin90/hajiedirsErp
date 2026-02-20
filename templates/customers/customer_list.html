@@ -164,9 +164,11 @@
                                         <a href="{% url 'sales:order_create' %}" class="btn btn-outline-secondary btn-sm" title="New Sales Order">
                                             <i class="bi bi-cart-plus"></i>
                                         </a>
+                                        {% if user.is_superuser %}
                                         <a href="{% url 'customers:customer_delete' customer.pk %}" class="btn btn-outline-danger btn-sm" title="Delete Customer">
                                             <i class="bi bi-trash"></i>
                                         </a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>

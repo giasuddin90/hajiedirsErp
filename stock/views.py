@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from django.contrib.auth.decorators import login_required
 from django.db import models
 from django.db.models import Sum, Count, Q, F
 from django.utils import timezone
@@ -15,13 +16,14 @@ from .forms import (
 )
 from sales.models import SalesOrderItem
 from purchases.models import PurchaseOrderItem, GoodsReceiptItem
+from core.mixins import StaffRequiredMixin, AdminRequiredMixin
 
 
 
 
 
 
-class ProductListView(ListView):
+class ProductListView(StaffRequiredMixin, ListView):
     model = Product
     template_name = 'stock/product_list.html'
     context_object_name = 'products'
@@ -65,12 +67,12 @@ class ProductListView(ListView):
         return context
 
 
-class ProductDetailView(DetailView):
+class ProductDetailView(StaffRequiredMixin, DetailView):
     model = Product
     template_name = 'stock/product_detail.html'
 
 
-class ProductCreateView(CreateView):
+class ProductCreateView(StaffRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
     template_name = 'stock/product_form.html'
@@ -87,7 +89,7 @@ class ProductCreateView(CreateView):
         return super().form_valid(form)
 
 
-class ProductUpdateView(UpdateView):
+class ProductUpdateView(StaffRequiredMixin, UpdateView):
     model = Product
     form_class = ProductForm
     template_name = 'stock/product_form.html'
@@ -104,13 +106,13 @@ class ProductUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class ProductDeleteView(DeleteView):
+class ProductDeleteView(AdminRequiredMixin, DeleteView):
     model = Product
     template_name = 'stock/product_confirm_delete.html'
     success_url = reverse_lazy('stock:product_list')
 
 
-class StockListView(ListView):
+class StockListView(StaffRequiredMixin, ListView):
     """List view for products with real-time inventory"""
     model = Product
     template_name = 'stock/stock_list.html'
@@ -251,7 +253,7 @@ class StockListView(ListView):
         return context
 
 
-class StockDetailView(DetailView):
+class StockDetailView(StaffRequiredMixin, DetailView):
     """Show product details with real-time inventory"""
     model = Product
     template_name = 'stock/stock_detail.html'
@@ -270,7 +272,7 @@ class StockDetailView(DetailView):
 
 
 # Category Management Views
-class ProductCategoryListView(ListView):
+class ProductCategoryListView(StaffRequiredMixin, ListView):
     model = ProductCategory
     template_name = 'stock/category_list.html'
     context_object_name = 'categories'
@@ -300,7 +302,7 @@ class ProductCategoryListView(ListView):
         return context
 
 
-class ProductCategoryCreateView(CreateView):
+class ProductCategoryCreateView(StaffRequiredMixin, CreateView):
     model = ProductCategory
     form_class = ProductCategoryForm
     template_name = 'stock/category_form.html'
@@ -311,7 +313,7 @@ class ProductCategoryCreateView(CreateView):
         return super().form_valid(form)
 
 
-class ProductCategoryUpdateView(UpdateView):
+class ProductCategoryUpdateView(StaffRequiredMixin, UpdateView):
     model = ProductCategory
     form_class = ProductCategoryForm
     template_name = 'stock/category_form.html'
@@ -322,14 +324,14 @@ class ProductCategoryUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class ProductCategoryDeleteView(DeleteView):
+class ProductCategoryDeleteView(AdminRequiredMixin, DeleteView):
     model = ProductCategory
     template_name = 'stock/category_confirm_delete.html'
     success_url = reverse_lazy('stock:category_list')
 
 
 # Brand Management Views
-class ProductBrandListView(ListView):
+class ProductBrandListView(StaffRequiredMixin, ListView):
     model = ProductBrand
     template_name = 'stock/brand_list.html'
     context_object_name = 'brands'
@@ -359,7 +361,7 @@ class ProductBrandListView(ListView):
         return context
 
 
-class ProductBrandCreateView(CreateView):
+class ProductBrandCreateView(StaffRequiredMixin, CreateView):
     model = ProductBrand
     form_class = ProductBrandForm
     template_name = 'stock/brand_form.html'
@@ -370,7 +372,7 @@ class ProductBrandCreateView(CreateView):
         return super().form_valid(form)
 
 
-class ProductBrandUpdateView(UpdateView):
+class ProductBrandUpdateView(StaffRequiredMixin, UpdateView):
     model = ProductBrand
     form_class = ProductBrandForm
     template_name = 'stock/brand_form.html'
@@ -381,7 +383,7 @@ class ProductBrandUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class ProductBrandDeleteView(DeleteView):
+class ProductBrandDeleteView(AdminRequiredMixin, DeleteView):
     model = ProductBrand
     template_name = 'stock/brand_confirm_delete.html'
     success_url = reverse_lazy('stock:brand_list')
@@ -391,7 +393,7 @@ class ProductBrandDeleteView(DeleteView):
 # To adjust inventory, create purchase orders (to increase) or cancel sales (to decrease)
 
 
-class StockReportView(ListView):
+class StockReportView(StaffRequiredMixin, ListView):
     """Stock report using real-time inventory"""
     model = Product
     template_name = 'stock/stock_report.html'
@@ -432,7 +434,7 @@ class StockReportView(ListView):
         return context
 
 
-class StockValuationReportView(ListView):
+class StockValuationReportView(StaffRequiredMixin, ListView):
     """Stock valuation report using real-time inventory"""
     model = Product
     template_name = 'stock/stock_valuation_report.html'
@@ -467,7 +469,7 @@ class StockValuationReportView(ListView):
 
 
 # UnitType Management Views
-class UnitTypeListView(ListView):
+class UnitTypeListView(StaffRequiredMixin, ListView):
     model = UnitType
     template_name = 'stock/unittype_list.html'
     context_object_name = 'unit_types'
@@ -500,7 +502,7 @@ class UnitTypeListView(ListView):
         return context
 
 
-class UnitTypeCreateView(CreateView):
+class UnitTypeCreateView(StaffRequiredMixin, CreateView):
     model = UnitType
     form_class = UnitTypeForm
     template_name = 'stock/unittype_form.html'
@@ -511,7 +513,7 @@ class UnitTypeCreateView(CreateView):
         return super().form_valid(form)
 
 
-class UnitTypeUpdateView(UpdateView):
+class UnitTypeUpdateView(StaffRequiredMixin, UpdateView):
     model = UnitType
     form_class = UnitTypeForm
     template_name = 'stock/unittype_form.html'
@@ -522,7 +524,7 @@ class UnitTypeUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class UnitTypeDeleteView(DeleteView):
+class UnitTypeDeleteView(AdminRequiredMixin, DeleteView):
     model = UnitType
     template_name = 'stock/unittype_confirm_delete.html'
     success_url = reverse_lazy('stock:unittype_list')
@@ -534,7 +536,7 @@ class UnitTypeDeleteView(DeleteView):
 
 
 # Warehouse Management Views
-class WarehouseListView(ListView):
+class WarehouseListView(StaffRequiredMixin, ListView):
     model = Warehouse
     template_name = 'stock/warehouse_list.html'
     context_object_name = 'warehouses'
@@ -559,13 +561,13 @@ class WarehouseListView(ListView):
         return queryset
 
 
-class WarehouseDetailView(DetailView):
+class WarehouseDetailView(StaffRequiredMixin, DetailView):
     model = Warehouse
     template_name = 'stock/warehouse_detail.html'
     context_object_name = 'warehouse'
 
 
-class WarehouseCreateView(CreateView):
+class WarehouseCreateView(StaffRequiredMixin, CreateView):
     model = Warehouse
     form_class = WarehouseForm
     template_name = 'stock/warehouse_form.html'
@@ -576,7 +578,7 @@ class WarehouseCreateView(CreateView):
         return super().form_valid(form)
 
 
-class WarehouseUpdateView(UpdateView):
+class WarehouseUpdateView(StaffRequiredMixin, UpdateView):
     model = Warehouse
     form_class = WarehouseForm
     template_name = 'stock/warehouse_form.html'
@@ -587,7 +589,7 @@ class WarehouseUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class WarehouseDeleteView(DeleteView):
+class WarehouseDeleteView(AdminRequiredMixin, DeleteView):
     model = Warehouse
     template_name = 'stock/warehouse_confirm_delete.html'
     success_url = reverse_lazy('stock:warehouse_list')
@@ -598,6 +600,7 @@ class WarehouseDeleteView(DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
+@login_required
 def get_product_stock_ajax(request):
     """AJAX endpoint to get available stock for a product in a warehouse"""
     if request.method != 'GET':

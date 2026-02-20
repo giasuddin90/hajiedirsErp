@@ -319,6 +319,13 @@
                     </ul>
                 </div>
             </li>
+            {% if user.is_superuser %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'staff_list' or request.resolver_match.url_name == 'staff_create' or request.resolver_match.url_name == 'staff_edit' %}active{% endif %}" href="{% url 'staff_list' %}">
+                    <i class="bi bi-person-gear"></i> Staff Management
+                </a>
+            </li>
+            {% endif %}
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'logout' %}">
                     <i class="bi bi-box-arrow-right"></i> Logout
@@ -332,7 +339,7 @@
                     </div>
                     <div class="user-details">
                         <div class="user-name">{{ user.username }}</div>
-                        <div class="user-role">Administrator</div>
+                        <div class="user-role">{% if user.is_superuser %}Administrator{% else %}Staff{% endif %}</div>
                     </div>
                 </div>
             {% endif %}

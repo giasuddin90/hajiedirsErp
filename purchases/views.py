@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
@@ -14,10 +15,11 @@ from .forms import (
 from suppliers.models import Supplier
 from stock.models import Product, ProductCategory, ProductBrand
 from django.contrib.auth.models import User
+from core.mixins import StaffRequiredMixin, AdminRequiredMixin
 import uuid
 
 
-class PurchaseOrderListView(ListView):
+class PurchaseOrderListView(StaffRequiredMixin, ListView):
     model = PurchaseOrder
     template_name = 'purchases/order_list.html'
     context_object_name = 'orders'
@@ -44,13 +46,13 @@ class PurchaseOrderListView(ListView):
         return context
 
 
-class PurchaseOrderDetailView(DetailView):
+class PurchaseOrderDetailView(StaffRequiredMixin, DetailView):
     model = PurchaseOrder
     template_name = 'purchases/order_detail.html'
     context_object_name = 'order'
 
 
-class PurchaseOrderCreateView(CreateView):
+class PurchaseOrderCreateView(StaffRequiredMixin, CreateView):
     model = PurchaseOrder
     form_class = PurchaseOrderForm
     template_name = 'purchases/order_form.html'
@@ -108,7 +110,7 @@ class PurchaseOrderCreateView(CreateView):
             return self.form_invalid(form)
 
 
-class PurchaseOrderUpdateView(UpdateView):
+class PurchaseOrderUpdateView(StaffRequiredMixin, UpdateView):
     model = PurchaseOrder
     form_class = PurchaseOrderForm
     template_name = 'purchases/order_form.html'
@@ -177,14 +179,14 @@ class PurchaseOrderUpdateView(UpdateView):
             return self.form_invalid(form)
 
 
-class PurchaseOrderDeleteView(DeleteView):
+class PurchaseOrderDeleteView(AdminRequiredMixin, DeleteView):
     model = PurchaseOrder
     template_name = 'purchases/order_confirm_delete.html'
     success_url = reverse_lazy('purchases:order_list')
 
 
 # Reports
-class PurchaseDailyReportView(ListView):
+class PurchaseDailyReportView(StaffRequiredMixin, ListView):
     model = PurchaseOrder
     template_name = 'purchases/reports/daily_report.html'
     context_object_name = 'orders'
@@ -194,7 +196,7 @@ class PurchaseDailyReportView(ListView):
         return PurchaseOrder.objects.filter(order_date=date)
 
 
-class PurchaseMonthlyReportView(ListView):
+class PurchaseMonthlyReportView(StaffRequiredMixin, ListView):
     model = PurchaseOrder
     template_name = 'purchases/reports/monthly_report.html'
     context_object_name = 'orders'
@@ -208,7 +210,7 @@ class PurchaseMonthlyReportView(ListView):
         )
 
 
-class PurchaseSupplierReportView(ListView):
+class PurchaseSupplierReportView(StaffRequiredMixin, ListView):
     """
     Supplier-specific report showing all purchase orders and goods receipts.
     """
@@ -307,7 +309,7 @@ class PurchaseSupplierReportView(ListView):
 
 
 # Goods Receipt Views
-class GoodsReceiptListView(ListView):
+class GoodsReceiptListView(StaffRequiredMixin, ListView):
     model = GoodsReceipt
     template_name = 'purchases/receipt_list.html'
     context_object_name = 'receipts'
@@ -333,13 +335,13 @@ class GoodsReceiptListView(ListView):
         return queryset.select_related('purchase_order', 'purchase_order__supplier', 'created_by')
 
 
-class GoodsReceiptDetailView(DetailView):
+class GoodsReceiptDetailView(StaffRequiredMixin, DetailView):
     model = GoodsReceipt
     template_name = 'purchases/receipt_detail.html'
     context_object_name = 'receipt'
 
 
-class GoodsReceiptCreateView(CreateView):
+class GoodsReceiptCreateView(StaffRequiredMixin, CreateView):
     model = GoodsReceipt
     form_class = GoodsReceiptForm
     template_name = 'purchases/receipt_form.html'
@@ -408,7 +410,7 @@ class GoodsReceiptCreateView(CreateView):
             return self.form_invalid(form)
 
 
-class GoodsReceiptUpdateView(UpdateView):
+class GoodsReceiptUpdateView(StaffRequiredMixin, UpdateView):
     model = GoodsReceipt
     form_class = GoodsReceiptForm
     template_name = 'purchases/receipt_form.html'
@@ -455,12 +457,13 @@ class GoodsReceiptUpdateView(UpdateView):
             return self.form_invalid(form)
 
 
-class GoodsReceiptDeleteView(DeleteView):
+class GoodsReceiptDeleteView(AdminRequiredMixin, DeleteView):
     model = GoodsReceipt
     template_name = 'purchases/receipt_confirm_delete.html'
     success_url = reverse_lazy('purchases:receipt_list')
 
 
+@login_required
 def confirm_goods_receipt(request, pk):
     """Confirm goods receipt and update inventory"""
     receipt = get_object_or_404(GoodsReceipt, pk=pk)
@@ -475,6 +478,7 @@ def confirm_goods_receipt(request, pk):
     return redirect('purchases:receipt_detail', pk=receipt.pk)
 
 
+@login_required
 def cancel_goods_receipt(request, pk):
     """Cancel goods receipt and reverse inventory"""
     receipt = get_object_or_404(GoodsReceipt, pk=pk)
@@ -489,6 +493,7 @@ def cancel_goods_receipt(request, pk):
     return redirect('purchases:receipt_detail', pk=receipt.pk)
 
 
+@login_required
 def get_purchase_order_items(request, purchase_order_id):
     """AJAX endpoint to get purchase order items for a given purchase order"""
     try:

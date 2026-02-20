@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Staff Management - BuildERP{% endblock %}
+
+{% block page_title %}Staff Management{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'staff_create' %}" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> Add Staff User
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card" style="background-color: #f8f9fa;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title" style="color: var(--text-primary);">Total Staff</h6>
+                        <h3 class="mb-0" style="color: var(--primary-color);">{{ staff_users|length }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people" style="font-size: 2rem; color: var(--primary-color);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-gear me-2"></i>
+                    Staff Users
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if staff_users %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Username</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for staff in staff_users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                        <strong>{{ staff.username }}</strong>
+                                    </div>
+                                </td>
+                                <td>{{ staff.get_full_name|default:"-" }}</td>
+                                <td>{{ staff.email|default:"-" }}</td>
+                                <td>
+                                    <span class="badge {% if staff.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if staff.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if staff.last_login %}
+                                        {{ staff.last_login|date:"d M Y H:i" }}
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'staff_edit' staff.pk %}" class="btn btn-outline-warning btn-sm" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'staff_delete' staff.pk %}" class="btn btn-outline-danger btn-sm" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">No Staff Users</h4>
+                    <p class="text-muted">Create staff accounts to allow others to use the system.</p>
+                    <a href="{% url 'staff_create' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-person-plus"></i> Add First Staff User
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+}
+</style>
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Sum
 from django.utils import timezone
 from django.contrib import messages
@@ -8,9 +9,10 @@ from decimal import Decimal
 from .models import Supplier, SupplierLedger
 from .forms import SupplierForm, SupplierLedgerForm, SetOpeningBalanceForm
 from purchases.models import PurchaseOrder
+from core.mixins import StaffRequiredMixin, AdminRequiredMixin
 
 
-class SupplierListView(ListView):
+class SupplierListView(StaffRequiredMixin, ListView):
     model = Supplier
     template_name = 'suppliers/supplier_list.html'
     context_object_name = 'suppliers'
@@ -65,38 +67,38 @@ class SupplierListView(ListView):
         return context
 
 
-class SupplierDetailView(DetailView):
+class SupplierDetailView(StaffRequiredMixin, DetailView):
     model = Supplier
     template_name = 'suppliers/supplier_detail.html'
 
 
-class SupplierCreateView(CreateView):
+class SupplierCreateView(StaffRequiredMixin, CreateView):
     model = Supplier
     form_class = SupplierForm
     template_name = 'suppliers/supplier_form.html'
     success_url = reverse_lazy('suppliers:supplier_list')
 
 
-class SupplierUpdateView(UpdateView):
+class SupplierUpdateView(StaffRequiredMixin, UpdateView):
     model = Supplier
     form_class = SupplierForm
     template_name = 'suppliers/supplier_form.html'
     success_url = reverse_lazy('suppliers:supplier_list')
 
 
-class SupplierDeleteView(DeleteView):
+class SupplierDeleteView(AdminRequiredMixin, DeleteView):
     model = Supplier
     template_name = 'suppliers/supplier_confirm_delete.html'
     success_url = reverse_lazy('suppliers:supplier_list')
 
 
-class SupplierLedgerListView(ListView):
+class SupplierLedgerListView(StaffRequiredMixin, ListView):
     model = SupplierLedger
     template_name = 'suppliers/ledger_list.html'
     context_object_name = 'items'
 
 
-class SupplierLedgerCreateView(CreateView):
+class SupplierLedgerCreateView(StaffRequiredMixin, CreateView):
     model = SupplierLedger
     form_class = SupplierLedgerForm
     template_name = 'suppliers/ledger_form.html'
@@ -117,7 +119,7 @@ class SupplierLedgerCreateView(CreateView):
 
 
 
-class SupplierLedgerDetailView(DetailView):
+class SupplierLedgerDetailView(StaffRequiredMixin, DetailView):
     model = Supplier
     template_name = 'suppliers/supplier_ledger_detail.html'
     context_object_name = 'supplier'
@@ -217,6 +219,7 @@ class SupplierLedgerDetailView(DetailView):
         return context
 
 
+@login_required
 def set_opening_balance(request, pk):
     """Set opening balance for a supplier"""
     supplier = get_object_or_404(Supplier, pk=pk)

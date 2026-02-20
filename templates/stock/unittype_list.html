@@ -115,11 +115,13 @@
                                                        title="Edit Unit Type">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
+                                                    {% if user.is_superuser %}
                                                     <a href="{% url 'stock:unittype_delete' unit_type.pk %}" 
                                                        class="btn btn-outline-danger btn-sm" 
                                                        title="Delete Unit Type">
                                                         <i class="bi bi-trash"></i>
                                                     </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>

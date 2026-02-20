@@ -111,11 +111,13 @@
                                                        title="Edit Category">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
+                                                    {% if user.is_superuser %}
                                                     <a href="{% url 'stock:category_delete' category.pk %}" 
                                                        class="btn btn-outline-danger btn-sm" 
                                                        title="Delete Category">
                                                         <i class="bi bi-trash"></i>
                                                     </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>

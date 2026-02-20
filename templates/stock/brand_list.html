@@ -111,11 +111,13 @@
                                                        title="Edit Brand">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
+                                                    {% if user.is_superuser %}
                                                     <a href="{% url 'stock:brand_delete' brand.pk %}" 
                                                        class="btn btn-outline-danger btn-sm" 
                                                        title="Delete Brand">
                                                         <i class="bi bi-trash"></i>
                                                     </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>

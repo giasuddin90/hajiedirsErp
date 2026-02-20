@@ -1,7 +1,9 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import TemplateView
+from django.contrib.auth.models import User
+from django.contrib import messages
+from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
 from django.db.models import Sum, Count, Q, Case, When, DecimalField
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -12,9 +14,11 @@ from sales.models import SalesOrder
 from purchases.models import PurchaseOrder
 from expenses.models import Expense
 from bankloan.models import CreditCardLoan
+from .mixins import StaffRequiredMixin, AdminRequiredMixin
+from .forms import StaffUserForm, StaffUserUpdateForm
 
 
-class DashboardView(LoginRequiredMixin, TemplateView):
+class DashboardView(StaffRequiredMixin, TemplateView):
     template_name = 'dashboard.html'
     
     def get_context_data(self, **kwargs):
@@ -209,3 +213,47 @@ def dashboard_redirect(request):
         'active_cc_loans': CreditCardLoan.objects.filter(status='active').count(),
         'closed_loan_interest_paid': closed_interest_paid,
     })
+
+
+class StaffListView(AdminRequiredMixin, ListView):
+    model = User
+    template_name = 'core/staff_list.html'
+    context_object_name = 'staff_users'
+
+    def get_queryset(self):
+        return User.objects.filter(is_superuser=False).order_by('username')
+
+
+class StaffCreateView(AdminRequiredMixin, CreateView):
+    model = User
+    form_class = StaffUserForm
+    template_name = 'core/staff_form.html'
+    success_url = reverse_lazy('staff_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Staff user "{form.cleaned_data["username"]}" created successfully.')
+        return super().form_valid(form)
+
+
+class StaffUpdateView(AdminRequiredMixin, UpdateView):
+    model = User
+    form_class = StaffUserUpdateForm
+    template_name = 'core/staff_form.html'
+    success_url = reverse_lazy('staff_list')
+
+    def get_queryset(self):
+        return User.objects.filter(is_superuser=False)
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Staff user "{form.cleaned_data["username"]}" updated successfully.')
+        return super().form_valid(form)
+
+
+class StaffDeleteView(AdminRequiredMixin, DeleteView):
+    model = User
+    template_name = 'core/staff_confirm_delete.html'
+    success_url = reverse_lazy('staff_list')
+    context_object_name = 'staff_user'
+
+    def get_queryset(self):
+        return User.objects.filter(is_superuser=False)

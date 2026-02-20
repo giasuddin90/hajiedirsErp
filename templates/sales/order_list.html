@@ -82,9 +82,11 @@
                                         <a href="{% url 'sales:labour_chalan' order.pk %}" class="btn btn-outline-success" title="Download Labour Chalan" target="_blank">
                                             <i class="bi bi-file-earmark-text"></i>
                                         </a>
+                                        {% if user.is_superuser %}
                                         <a href="{% url 'sales:order_delete' order.pk %}" class="btn btn-outline-danger" title="Delete Order">
                                             <i class="bi bi-trash"></i>
                                         </a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>

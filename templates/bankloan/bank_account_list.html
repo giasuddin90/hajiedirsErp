@@ -64,9 +64,11 @@
                                 <a href="{% url 'bankloan:account_edit' account.pk %}" class="btn btn-sm btn-outline-secondary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                {% if user.is_superuser %}
                                 <a href="{% url 'bankloan:account_delete' account.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
