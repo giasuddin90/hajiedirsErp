@@ -59,19 +59,17 @@
 }
 
 .logo-icon {
-    background: var(--primary-light);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-sm);
     margin-right: var(--spacing-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--primary-color);
+    flex-shrink: 0;
 }
 
-.logo-icon i {
-    font-size: 1.5rem;
-    color: var(--primary-color);
+.logo-icon img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
 }
 
 .brand-text {
