@@ -23,7 +23,7 @@ This is a Django ERP (Enterprise Resource Planning) system for **HAJI IDRIS AND 
 - **sales**: Sales orders, invoices, payments, A4 & POS (80mm) printing
 - **purchases**: Purchase orders, invoices, and payments
 - **expenses**: Business expense tracking with categories
-- **bankloan**: Bank accounts and credit-card loan management
+- **bankloan**: Bank accounts, account transaction ledgers, and credit-card loan management
 - **reports**: Business reports and analytics
 - **core**: Main Django settings and configuration
 
@@ -33,6 +33,7 @@ This is a Django ERP (Enterprise Resource Planning) system for **HAJI IDRIS AND 
 - **Customer Ledger PDF**: `templates/customers/ledger_pdf.html` — auto-print
 - **Bank Account Ledger PDF**: `templates/bankloan/bank_account_ledger_pdf.html` — auto-print
 - **Loan Ledger PDF**: `templates/bankloan/loan_ledger_pdf.html`
+- **Bank Account Transaction Ledger PDF**: `templates/bankloan/bank_account_transaction_ledger_pdf.html` — auto-print
 - All print templates use `window.print()` on load (no PDF library required)
 - Company header is hardcoded: HAJI IDRIS AND SONS + phone numbers
 
@@ -95,6 +96,13 @@ This is a Django ERP (Enterprise Resource Planning) system for **HAJI IDRIS AND 
 
 ### Bank & Loans
 - `BankAccount`: Bank account information (current, savings, credit card, loan)
+  - Methods: `get_total_deposits()` - total deposits from ledger entries
+  - Methods: `get_total_withdrawals()` - total withdrawals from ledger entries
+  - Methods: `get_calculated_balance()` - opening_balance + deposits - withdrawals
+  - Methods: `update_balance()` - recalculates and saves `current_balance`
+  - `current_balance` is auto-calculated from ledger entries (not manually editable)
+- `BankAccountLedger`: Bank account transaction ledger (deposit / withdrawal)
+  - Auto-updates `BankAccount.current_balance` on save/delete
 - `CreditCardLoan`: Credit card loan tracking with deal numbers, status, principal
 - `CreditCardLoanLedger`: Loan ledger entries (disbursement / payment)
 
@@ -216,6 +224,8 @@ python manage.py createsuperuser
 - ✅ Labour Chalan printing: A4 and POS (80mm) formats
 - ✅ Customer ledger print (auto-print HTML)
 - ✅ Bank account ledger print (auto-print HTML)
+- ✅ Bank account transaction ledger (deposit/withdrawal with running balance)
+- ✅ Bank account transaction ledger print (auto-print HTML)
 - ✅ Real-time inventory calculation (no pre-calculated values)
 - ✅ Dynamic low stock alerts based on min_stock_level
 
@@ -236,6 +246,9 @@ python manage.py createsuperuser
   - `Product.get_realtime_quantity()`: Sums purchase items (goods-received) minus sales items (delivered)
   - Use `select_related()` for foreign keys when calculating inventory
   - No N+1 queries - use bulk aggregation
+- **Bank Balance Calculation**: `current_balance` is auto-updated via `BankAccountLedger.save()`/`delete()`
+  - `BankAccount.get_calculated_balance()`: opening_balance + sum(deposits) - sum(withdrawals)
+  - Balance recalculated on every ledger entry save/delete
 
 ## Testing
 - Write unit tests for models and views
